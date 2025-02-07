@@ -4,7 +4,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 
-@lombok.Getter
 enum Color {
     RED("red"), GREEN("green"), BLUE("blue");
     private final String name;
@@ -14,20 +13,22 @@ enum Color {
     }
 
     public static Color fromName(String text) {
-        if (text == null || text.isEmpty()) {
-            return null;
-        }
+        return text == null || text.isEmpty() ? null :
+                switch (text.trim().toLowerCase()) {
+                    case "red" -> RED;
+                    case "green" -> GREEN;
+                    case "blue" -> BLUE;
+                    default -> null;
+                };
+    }
 
-        return switch (text.trim().toLowerCase()) {
-            case "red" -> RED;
-            case "green" -> GREEN;
-            case "blue" -> BLUE;
-            default -> null;
-        };
+
+    @Override
+    public String toString() {
+        return name;
     }
 }
 
-@lombok.Getter
 enum Size {
     S("s"), M("m"), L("l"), XL("xl");
     private final String name;
@@ -37,17 +38,19 @@ enum Size {
     }
 
     public static Size fromName(String text) {
-        if (text == null || text.isEmpty()) {
-            return null;
-        }
+        return text == null || text.isEmpty() ? null :
+                switch (text.trim().toLowerCase()) {
+                    case "s" -> S;
+                    case "m" -> M;
+                    case "l" -> L;
+                    case "xl" -> XL;
+                    default -> null;
+                };
+    }
 
-        return switch (text.trim().toLowerCase()) {
-            case "s" -> S;
-            case "m" -> M;
-            case "l" -> L;
-            case "xl" -> XL;
-            default -> null;
-        };
+    @Override
+    public String toString() {
+        return name;
     }
 }
 
