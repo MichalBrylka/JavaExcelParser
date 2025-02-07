@@ -1,5 +1,6 @@
 package org.example;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -14,6 +15,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 
 class FieldTranslationTest {
@@ -48,7 +50,12 @@ class FieldTranslationTest {
                 Arguments.of(new FieldTranslation("ABC", "Ala ma kota a kot ma Alę"), """
                         {"ABC":"Ala ma kota a kot ma Alę"}"""),
                 Arguments.of(new FieldTranslation(" gff gfg ", "DEF\nGHI"), """
-                        {" gff gfg ":"DEF\\nGHI"}""")
+                        {" gff gfg ":"DEF\\nGHI"}"""),
+
+                Arguments.of(new FieldTranslation("_ABC_", "_DEF_"), """
+                        {"_ABC_":"_DEF_"}"""),
+                Arguments.of(new FieldTranslation("field-with-hyphens", "translation-with-hyphens"), """
+                        {"field-with-hyphens":"translation-with-hyphens"}""")
         );
     }
 
@@ -73,6 +80,39 @@ class FieldTranslationTest {
     private static final Faker faker = new Faker(random);
 
     private static Stream<FieldTranslation> faked() {
-        return IntStream.range(0, 40).boxed().map( i-> new FieldTranslation(  faker.lorem().sentence(), faker.lorem().word() )  );
+        return IntStream.range(0, 40).boxed().map(i -> new FieldTranslation(faker.lorem().sentence(), faker.lorem().word()));
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("invalidFieldTranslations")
+    void testDeserialize_invalidInput(String json, String expectedErrorMessage) {
+        var objectMapper = new ObjectMapper();
+
+        assertThatExceptionOfType(JsonParseException.class)
+                .isThrownBy(() -> objectMapper.readValue(json, FieldTranslation.class))
+                .withMessageStartingWith(expectedErrorMessage);
+    }
+
+    static Stream<Arguments> invalidFieldTranslations() {
+        return Stream.of(
+                Arguments.of("""
+                        {"oldField": "newField", "extraField": "extra"}
+                        """, "Too many fields. Exactly one field key:value is supported"),
+                Arguments.of("""
+                        {"oldField": 123}
+                        """, "Only text value nodes are supported"),
+                Arguments.of("""
+                        {"oldField": ["value1", "value2"]}""", """
+                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation"}"""),
+                Arguments.of("""
+                        {"oldField": { "nested": "value"}}""", """
+                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation"}"""),
+                Arguments.of("[]", "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}"),
+                Arguments.of("{}", "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}"),
+                Arguments.of("""
+                        "string"
+                        """, "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}")
+        );
     }
 }
