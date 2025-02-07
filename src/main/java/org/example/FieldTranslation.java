@@ -10,13 +10,6 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 import java.io.IOException;
 import java.util.Iterator;
 
-/*var objectMapper = new ObjectMapper();
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-        var orig = new FieldTranslation(" gff gfg ", "1234");
-        String json = objectMapper.writeValueAsString(orig);
-        var deser = objectMapper.readValue(json, FieldTranslation.class);*/
-
 @JsonSerialize(using = FieldTranslationSerializer.class)
 @JsonDeserialize(using = FieldTranslationDeserializer.class)
 public record FieldTranslation(@lombok.NonNull String from, @lombok.NonNull String to) {
@@ -39,7 +32,7 @@ class FieldTranslationSerializer extends JsonSerializer<FieldTranslation> {
 class FieldTranslationDeserializer extends JsonDeserializer<FieldTranslation> {
 
     @Override
-    public FieldTranslation deserialize(JsonParser p, DeserializationContext ctx) throws IOException, JacksonException {
+    public FieldTranslation deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
         var node = p.getCodec().readTree(p);
 
         if (node.isObject() && node.fieldNames() instanceof Iterator<String> fields &&
