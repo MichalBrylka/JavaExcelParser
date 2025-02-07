@@ -16,29 +16,8 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-/*List<ColumnDefinition> dataTypes = Arrays.asList(
-                IntegerColumnDefinition.INSTANCE,
-                new DoubleColumnDefinition("#.###"),
-                new DoubleColumnDefinition("#.##########"),
-                EmptyColumnDefinition.INSTANCE,
-                CurrencyColumnDefinition.INSTANCE,
-                new DateColumnDefinition("dd.MM.yyyy"),
-                new StringColumnDefinition(),
-                new EnumColumnDefinition(Color.class),
-                new CustomColumnDefinition(Price.class),
-                new StringColumnDefinition()
-        );
-
-
-        var objectMapper = new ObjectMapper();
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-        String json = objectMapper.writeValueAsString(dataTypes);
-
-
-        List<ColumnDefinition> deser = objectMapper.readValue(json, new TypeReference<>() {
-        });*/
 @JsonSerialize(using = ColumnDefinitionSerializer.class)
 @JsonDeserialize(using = ColumnDefinitionDeserializer.class)
 sealed interface ColumnDefinition<TValue extends Value> permits
@@ -46,36 +25,47 @@ sealed interface ColumnDefinition<TValue extends Value> permits
         DateColumnDefinition, DoubleColumnDefinition, EmptyColumnDefinition,
         EnumColumnDefinition, IntegerColumnDefinition, StringColumnDefinition {
     TValue getValue(CellValue cellValue);
+
+    ColumnDefinitionKind getKind();
+}
+
+enum ColumnDefinitionKind {
+    BOOLEAN("boolean"), EMPTY("empty"), INTEGER("integer"), CURRENCY("currency"),
+    DATE("date"), DOUBLE("double"), STRING("string"),
+    CUSTOM("custom"), ENUM("enum");
+
+    private final String name;
+
+    ColumnDefinitionKind(String name) {
+        this.name = name;
+    }
+
+    public static ColumnDefinitionKind fromName(String text) {
+        return text == null || text.isEmpty() ? null :
+                switch (text.trim().toLowerCase()) {
+                    case "boolean" -> BOOLEAN;
+                    case "empty" -> EMPTY;
+                    case "integer" -> INTEGER;
+                    case "currency" -> CURRENCY;
+                    case "date" -> DATE;
+                    case "double" -> DOUBLE;
+                    case "string" -> STRING;
+                    case "custom" -> CUSTOM;
+                    case "enum" -> ENUM;
+                    default -> null;
+                };
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }
 
 final class ColumnDefinitionCommons {
     static final String KIND = "kind";
     static final String FORMAT = "format";
     static final String TYPE = "type";
-
-    //TODO add tests to check that against reflected state
-    static final Map<Class<? extends ColumnDefinition<? extends Value>>, String> COLUMN_DEFINITION_TYPE_MAP = Map.of(
-            BooleanColumnDefinition.class, "boolean",
-            EmptyColumnDefinition.class, "empty",
-            IntegerColumnDefinition.class, "integer",
-            CurrencyColumnDefinition.class, "currency",
-
-            DateColumnDefinition.class, "date",
-            DoubleColumnDefinition.class, "double",
-            StringColumnDefinition.class, "string",
-
-            CustomColumnDefinition.class, "custom",
-            EnumColumnDefinition.class, "enum"
-    );
-
-    static final Map<String, Class<?>> CUSTOM_TYPE_TYPE_MAP = Map.of(
-            "Price", Price.class
-    );
-
-    static final Map<String, Class<? extends Enum<?>>> ENUM_TYPE_TYPE_MAP = Map.of(
-            "Color", Color.class,
-            "Size", Size.class
-    );
 }
 
 final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<? extends Value>> {
@@ -87,10 +77,9 @@ final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<?
         }
         gen.writeStartObject();
 
-        var kind = ColumnDefinitionCommons.COLUMN_DEFINITION_TYPE_MAP.get(columnDefinition.getClass());
-        if (kind == null)
+        if (!(columnDefinition.getKind() instanceof ColumnDefinitionKind kind))
             throw new IllegalStateException(columnDefinition.getClass().getSimpleName() + " is not supported");
-        gen.writeStringField(ColumnDefinitionCommons.KIND, kind);
+        gen.writeStringField(ColumnDefinitionCommons.KIND, kind.toString());
 
         switch (columnDefinition) {
             case BooleanColumnDefinition ignored:
@@ -113,10 +102,10 @@ final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<?
                 break;
 
             case EnumColumnDefinition(var enumType):
-                writeClass(gen, enumType, ColumnDefinitionCommons.ENUM_TYPE_TYPE_MAP);
+                writeClass(gen, enumType, EnumColumnDefinition.ENUM_TYPE_TYPE_MAP);
                 break;
             case CustomColumnDefinition(var customType):
-                writeClass(gen, customType, ColumnDefinitionCommons.CUSTOM_TYPE_TYPE_MAP);
+                writeClass(gen, customType, CustomColumnDefinition.CUSTOM_TYPE_TYPE_MAP);
                 break;
 
             default:
@@ -142,28 +131,31 @@ final class ColumnDefinitionDeserializer extends JsonDeserializer<ColumnDefiniti
 
         if (node.isObject() && node.fieldNames() instanceof Iterator<String> fields) {
             if (!fields.hasNext())
-                return EmptyColumnDefinition.INSTANCE;
+                return EmptyColumnDefinition.INSTANCE; //by convention default value is EmptyColumnDefinition
 
             if (!(node.get(ColumnDefinitionCommons.KIND) instanceof TextNode kindNode) || kindNode.asText().isEmpty())
                 throw new JsonParseException(p, "kind field is obligatory for non-empty nodes");
-            String kind = kindNode.asText();
+            var kind = ColumnDefinitionKind.fromName(kindNode.asText());
+            if (kind == null)
+                throw new IllegalStateException(kindNode.asText() + " is not supported");
 
-            return switch (kind.toLowerCase()) {
-                case "boolean" -> checkOnlyKindAndReturn(p, node, BooleanColumnDefinition.INSTANCE);
-                case "empty" -> checkOnlyKindAndReturn(p, node, EmptyColumnDefinition.INSTANCE);
-                case "integer" -> checkOnlyKindAndReturn(p, node, IntegerColumnDefinition.INSTANCE);
-                case "currency" -> checkOnlyKindAndReturn(p, node, CurrencyColumnDefinition.INSTANCE);
 
-                case "date" ->
+            return switch (kind) {
+                case ColumnDefinitionKind.BOOLEAN -> checkOnlyKindAndReturn(p, node, BooleanColumnDefinition.INSTANCE);
+                case ColumnDefinitionKind.EMPTY -> checkOnlyKindAndReturn(p, node, EmptyColumnDefinition.INSTANCE);
+                case ColumnDefinitionKind.INTEGER -> checkOnlyKindAndReturn(p, node, IntegerColumnDefinition.INSTANCE);
+                case ColumnDefinitionKind.CURRENCY ->
+                        checkOnlyKindAndReturn(p, node, CurrencyColumnDefinition.INSTANCE);
+
+                case ColumnDefinitionKind.DATE ->
                         checkKindAndFormatAtMost(p, node) instanceof String format ? new DateColumnDefinition(format) : new DateColumnDefinition();
-                case "double" ->
+                case ColumnDefinitionKind.DOUBLE ->
                         checkKindAndFormatAtMost(p, node) instanceof String format ? new DoubleColumnDefinition(format) : new DoubleColumnDefinition();
-                case "string" ->
+                case ColumnDefinitionKind.STRING ->
                         checkKindAndFormatAtMost(p, node) instanceof String format ? new StringColumnDefinition(format) : new StringColumnDefinition();
 
-                case "custom" -> new CustomColumnDefinition(checkKindAndType(p, node));
-                case "enum" -> new EnumColumnDefinition(checkKindAndTypeForEnum(p, node));
-                default -> throw new IllegalStateException(kind + " is not supported");
+                case ColumnDefinitionKind.CUSTOM -> new CustomColumnDefinition(checkKindAndType(p, node));
+                case ColumnDefinitionKind.ENUM -> new EnumColumnDefinition(checkKindAndTypeForEnum(p, node));
             };
         } else throw new JsonParseException(p, """
                 Invalid schema for ColumnDefinition. Supported schema are:
@@ -208,10 +200,10 @@ final class ColumnDefinitionDeserializer extends JsonDeserializer<ColumnDefiniti
             if (!ColumnDefinitionCommons.KIND.equals(field) && !ColumnDefinitionCommons.TYPE.equals(field))
                 throw new JsonParseException(p, "'kind' and 'type' are only supported field for custom");
             if (ColumnDefinitionCommons.TYPE.equals(field) && node.get(ColumnDefinitionCommons.TYPE) instanceof TextNode typeNode)
-                type = ColumnDefinitionCommons.CUSTOM_TYPE_TYPE_MAP.get(typeNode.asText());
+                type = CustomColumnDefinition.CUSTOM_TYPE_TYPE_MAP.get(typeNode.asText());
         }
         if (type == null)
-            throw new JsonParseException(p, "'type' is obligatory field for custom. Supported types are: " + String.join(", ", ColumnDefinitionCommons.CUSTOM_TYPE_TYPE_MAP.keySet()));
+            throw new JsonParseException(p, "'type' is obligatory field for custom. Supported types are: " + String.join(", ", CustomColumnDefinition.CUSTOM_TYPE_TYPE_MAP.keySet()));
         return type;
     }
 
@@ -224,10 +216,10 @@ final class ColumnDefinitionDeserializer extends JsonDeserializer<ColumnDefiniti
             if (!ColumnDefinitionCommons.KIND.equals(field) && !ColumnDefinitionCommons.TYPE.equals(field))
                 throw new JsonParseException(p, "'kind' and 'type' are only supported field for enum");
             if (ColumnDefinitionCommons.TYPE.equals(field) && node.get(ColumnDefinitionCommons.TYPE) instanceof TextNode typeNode)
-                type = ColumnDefinitionCommons.ENUM_TYPE_TYPE_MAP.get(typeNode.asText());
+                type = EnumColumnDefinition.ENUM_TYPE_TYPE_MAP.get(typeNode.asText());
         }
         if (type == null)
-            throw new JsonParseException(p, "'type' is obligatory field for enum. Supported types are: " + String.join(", ", ColumnDefinitionCommons.ENUM_TYPE_TYPE_MAP.keySet()));
+            throw new JsonParseException(p, "'type' is obligatory field for enum. Supported types are: " + String.join(", ", EnumColumnDefinition.ENUM_TYPE_TYPE_MAP.keySet()));
         return type;
     }
 }
@@ -242,6 +234,16 @@ final class EmptyColumnDefinition implements ColumnDefinition<Value> {
     @Override
     public Value getValue(CellValue cellValue) {
         return SimplyBlank.INSTANCE;
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.EMPTY;
+    }
+
+    @Override
+    public String toString() {
+        return "EmptyColumnDefinition";
     }
 }
 
@@ -262,6 +264,16 @@ final class BooleanColumnDefinition implements ColumnDefinition<BooleanValueBase
             case BooleanCellValue(var b) -> new BooleanValue(b);
             case DateCellValue(var date) -> new BooleanValue(date != LocalDate.MIN);
         };
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.BOOLEAN;
+    }
+
+    @Override
+    public String toString() {
+        return "BooleanColumnDefinition";
     }
 }
 
@@ -287,6 +299,16 @@ final class IntegerColumnDefinition implements ColumnDefinition<IntegerValueBase
             case BooleanCellValue(var b) -> new IntegerValue(b ? 1 : 0);
             case DateCellValue(var date) -> new IntegerValue((int) Math.floor(DateUtil.getExcelDate(date)));
         };
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.INTEGER;
+    }
+
+    @Override
+    public String toString() {
+        return "IntegerColumnDefinition";
     }
 }
 
@@ -315,6 +337,11 @@ record DoubleColumnDefinition(String format) implements ColumnDefinition<DoubleV
             case BooleanCellValue(var b) -> new DoubleValue(b ? 1.0 : 0.0);
             case DateCellValue(var date) -> new DoubleValue(DateUtil.getExcelDate(date));
         };
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.DOUBLE;
     }
 }
 
@@ -345,6 +372,10 @@ record DateColumnDefinition(String format) implements ColumnDefinition<DateValue
         };
     }
 
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.DATE;
+    }
 }
 
 final class CurrencyColumnDefinition implements ColumnDefinition<CurrencyValueBase> {
@@ -372,6 +403,16 @@ final class CurrencyColumnDefinition implements ColumnDefinition<CurrencyValueBa
             case BooleanCellValue(var b) -> new CurrencyValue(b ? BigDecimal.ONE : BigDecimal.ZERO);
             case DateCellValue(var date) -> new CurrencyValue(BigDecimal.valueOf(DateUtil.getExcelDate(date)));
         };
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.CURRENCY;
+    }
+
+    @Override
+    public String toString() {
+        return "CurrencyColumnDefinition";
     }
 }
 
@@ -409,6 +450,11 @@ record StringColumnDefinition(String format) implements ColumnDefinition<StringV
             }
         };
     }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.STRING;
+    }
 }
 
 record EnumColumnDefinition(Class<? extends Enum<?>> enumType) implements ColumnDefinition<EnumValueBase> {
@@ -416,6 +462,9 @@ record EnumColumnDefinition(Class<? extends Enum<?>> enumType) implements Column
             Color.class, Color::fromName,
             Size.class, Size::fromName
     );
+
+    static final Map<String, Class<? extends Enum<?>>> ENUM_TYPE_TYPE_MAP =
+            enumParsers.keySet().stream().collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
 
     public EnumValueBase getValue(CellValue cellValue) {
         return switch (cellValue) {
@@ -432,6 +481,11 @@ record EnumColumnDefinition(Class<? extends Enum<?>> enumType) implements Column
             default -> new EnumValueError("Enum value cannot be obtained");
         };
     }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.ENUM;
+    }
 }
 
 record CustomColumnDefinition(Class<?> customType) implements ColumnDefinition<CustomValueBase> {
@@ -442,6 +496,9 @@ record CustomColumnDefinition(Class<?> customType) implements ColumnDefinition<C
     private static final Map<Class<?>, Function<Double, ?>> numberParsers = Map.of(
             Price.class, Price::of
     );
+
+    static final Map<String, Class<?>> CUSTOM_TYPE_TYPE_MAP =
+            textParsers.keySet().stream().collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
 
     public CustomValueBase getValue(CellValue cellValue) {
         return switch (cellValue) {
@@ -473,5 +530,10 @@ record CustomColumnDefinition(Class<?> customType) implements ColumnDefinition<C
             case ErrorCellValue(var err) -> new CustomValueError(err);
             default -> new CustomValueError("Custom value cannot be obtained");
         };
+    }
+
+    @Override
+    public ColumnDefinitionKind getKind() {
+        return ColumnDefinitionKind.CUSTOM;
     }
 }
