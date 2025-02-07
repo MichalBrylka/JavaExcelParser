@@ -55,7 +55,12 @@ class FieldTranslationTest {
                 Arguments.of(new FieldTranslation("_ABC_", "_DEF_"), """
                         {"_ABC_":"_DEF_"}"""),
                 Arguments.of(new FieldTranslation("field-with-hyphens", "translation-with-hyphens"), """
-                        {"field-with-hyphens":"translation-with-hyphens"}""")
+                        {"field-with-hyphens":"translation-with-hyphens"}"""),
+
+                Arguments.of(new FieldTranslation("from1", "to1", new MyDateColumnDefinition("date format")), """
+                        {"from1":"to1","columnDefinition":{"date":{"format":"date format"}}}"""),
+                Arguments.of(new FieldTranslation("from-2", "to_2", new MyStringColumnDefinition("string format")), """
+                        {"from-2":"to_2","columnDefinition":{"string":{"format":"string format"}}}""")
         );
     }
 
@@ -98,21 +103,30 @@ class FieldTranslationTest {
         return Stream.of(
                 Arguments.of("""
                         {"oldField": "newField", "extraField": "extra"}
-                        """, "Too many fields. Exactly one field key:value is supported"),
+                        """, "Only one from-to field is supported i.e. { \"from\": \"to\" } in addition to optional column definition"),
                 Arguments.of("""
-                        {"oldField": 123}
-                        """, "Only text value nodes are supported"),
+                        {"oldField": "newField", "columnDefinition": {}, "extraField": "extra"}
+                        """, "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\", \"columnDefinition\": {...optional column definition}}"),
                 Arguments.of("""
-                        {"oldField": ["value1", "value2"]}""", """
-                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation"}"""),
+                        {"oldField": 123}""", "Only text value nodes are supported"),
                 Arguments.of("""
-                        {"oldField": { "nested": "value"}}""", """
-                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation"}"""),
-                Arguments.of("[]", "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}"),
-                Arguments.of("{}", "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}"),
+                        {"oldField": 123.15}""", "Only text value nodes are supported"),
+                Arguments.of("""
+                        {"oldField": true}""", "Only text value nodes are supported"),
+                Arguments.of("""
+                        {"oldField": {"complex": "object"}}""", "Only text value nodes are supported"),
+
+                Arguments.of("""
+                        {"oldField": ["value1", "value2"]}""", "Only text value nodes are supported"),
+
+                Arguments.of("[]", """
+                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation", "columnDefinition": {...optional column definition}}"""),
+                Arguments.of("{}", """
+                        Only one from-to field is supported i.e. { "from": "to" } in addition to optional column definition"""),
                 Arguments.of("""
                         "string"
-                        """, "Invalid schema for FieldTranslation. Supported schema is {\"oldField\": \"translation\"}")
+                        """, """
+                        Invalid schema for FieldTranslation. Supported schema is {"oldField": "translation", "columnDefinition": {...optional column definition}}""")
         );
     }
 }
