@@ -9,7 +9,7 @@ import java.util.*;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        List<ColumnDefinition> dataTypes = Arrays.asList(
+        List<ColumnDefinition<?>> dataTypes = Arrays.asList(
                 IntegerColumnDefinition.INSTANCE,
                 new DoubleColumnDefinition("#.###"),
                 new DoubleColumnDefinition("#.##########"),
