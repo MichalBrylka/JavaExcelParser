@@ -9,6 +9,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -17,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 
 class ValueTest {
-     private static final Random random = new Random();
+    private static final Random random = new Random();
     private static final Faker faker = new Faker(random);
 
     @ParameterizedTest
@@ -46,20 +49,66 @@ class ValueTest {
         return Stream.of(
                 Arguments.of(null, "null"),
 
-                Arguments.of(, """
-                        """),
+                Arguments.of(Blank.INSTANCE, """
+                        {}"""),
 
+                Arguments.of(new BooleanValue(false), """
+                        {"boolean":false}"""),
+                Arguments.of(new BooleanValue(true), """
+                        {"boolean":true}"""),
+                Arguments.of(new CurrencyValue(new BigDecimal("123456789012345678901234567890.1234567890123456789")), """
+                        {"currency":123456789012345678901234567890.1234567890123456789}"""),
+                Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 0, 0)), """
+                        {"date":"2025-02-01"}"""),
+                Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 23, 34, 56, 789)), """
+                        {"date":"2025-02-01T23:34:56.000000789"}"""),
+                Arguments.of(new DoubleValue(0), """
+                        {"double":0.0}"""),
+                Arguments.of(new DoubleValue(3.141592653589793), """
+                        {"double":3.141592653589793}"""),
+                Arguments.of(new DoubleValue(Double.MAX_VALUE), """
+                        {"double":1.7976931348623157E+308}"""),
+                Arguments.of(new ErrorValue(""), """
+                        {"error":""}"""),
+                Arguments.of(new ErrorValue("Something was wrong"), """
+                        {"error":"Something was wrong"}"""),
+                Arguments.of(new IntegerValue(0), """
+                        {"integer":0}"""),
+                Arguments.of(new IntegerValue(Integer.MAX_VALUE), """
+                        {"integer":2147483647}"""),
+                Arguments.of(new LongValue(1), """
+                        {"long":1}"""),
+                Arguments.of(new LongValue(Long.MAX_VALUE), """
+                        {"long":9223372036854775807}"""),
+                Arguments.of(new StringValue(""), """
+                        {"string":""}"""),
+                Arguments.of(new StringValue("Ala ma kota"), """
+                        {"string":"Ala ma kota"}"""),
+                Arguments.of(new TimeValue(LocalTime.of(12, 34)), """
+                        {"time":"12:34"}"""),
+                Arguments.of(new TimeValue(LocalTime.of(12, 34, 56)), """
+                        {"time":"12:34:56"}"""),
+
+                Arguments.of(new EnumValue<Color>(Color.BLUE), """
+                        {"enum":"blue","type":"Color"}"""),
+                Arguments.of(new EnumValue<Size>(Size.XL), """
+                        {"enum":"xl","type":"Size"}"""),
+
+                Arguments.of(new CustomValue<Price>(Price.of(3.14)), """
+                        {"custom":"3.14","type":"Price"}"""),
+                Arguments.of(new CustomValue<Price>(Price.mkt()), """
+                        {"custom":"MKT","type":"Price"}""")
                 );
     }
-        //TODO add faker tests
-    /*@ParameterizedTest
+
+    @ParameterizedTest
     @MethodSource("faked")
     @DisplayName("test serialization and deserialization - generated")
-    void testSerializationAndDeserialization_UsingFaker(ColumnDefinition<?> input) throws JsonProcessingException {
+    void testSerializationAndDeserialization_UsingFaker(Value input) throws JsonProcessingException {
         var objectMapper = new ObjectMapper();
         objectMapper.disable(SerializationFeature.INDENT_OUTPUT);
         String json = objectMapper.writeValueAsString(input);
-        var deserialized = objectMapper.readValue(json, ColumnDefinition.class);
+        var deserialized = objectMapper.readValue(json, Value.class);
 
         System.out.println(json);
 
@@ -68,21 +117,21 @@ class ValueTest {
                 .isEqualTo(input);
     }
 
-    private static Stream<? extends ColumnDefinition<?>> faked() {
-        return Stream.generate(ColumnDefinitionTest::getRandomColumnDefinition)
+    private static Stream<Value> faked() {
+        return Stream.generate(ValueTest::getRandomValue)
                 .limit(40);
     }
 
-    private static ColumnDefinition<?> getRandomColumnDefinition() {
-        int ruleIndex = random.nextInt(9) + 1;
+    private static Value getRandomValue() {
+        int ruleIndex = random.nextInt(12) + 1;
 
         return switch (ruleIndex) {
-            case 1 -> BooleanColumnDefinition.INSTANCE;
-            case 2 -> EmptyColumnDefinition.INSTANCE;
-            case 3 -> IntegerColumnDefinition.INSTANCE;
+            case 1 -> Blank.INSTANCE;
+            case 2 -> new BooleanValue(random.nextBoolean());
+            case 3 -> new CurrencyValue(BigDecimal.valueOf(random.nextDouble() * 100000000000.0));
 
-            case 4 ->
-                    random.nextBoolean() ? new DateColumnDefinition(faker.lorem().word()) : new DateColumnDefinition();
+            case 4 -> new DateValue()
+                    ;
             case 5 ->
                     random.nextBoolean() ? new DoubleColumnDefinition(faker.lorem().word()) : new DoubleColumnDefinition();
             case 6 ->
@@ -92,6 +141,9 @@ class ValueTest {
             case 8 -> new CustomColumnDefinition(getRandom(CustomColumnDefinition.CUSTOM_TYPE_TYPE_MAP.values()));
 
             case 9 -> CurrencyColumnDefinition.INSTANCE;
+            case 10 -> CurrencyColumnDefinition.INSTANCE;
+            case 11 -> CurrencyColumnDefinition.INSTANCE;
+            case 12 -> CurrencyColumnDefinition.INSTANCE;
             default -> throw new IllegalStateException("Unexpected value: " + ruleIndex);
         };
     }
@@ -113,36 +165,4 @@ class ValueTest {
 
 
 
-    @ParameterizedTest
-    @MethodSource("provideCompactDeserializationData")
-    @DisplayName("test deserialization of compact data")
-    void testDeserialization_CompactData(ColumnDefinition<?> expected, String json) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
-
-        var deserialized = objectMapper.readValue(json, ColumnDefinition.class);
-
-        String json2 = objectMapper.writeValueAsString(deserialized);
-        var deserialized2 = objectMapper.readValue(json2, ColumnDefinition.class);
-
-        assertThat(deserialized)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
-
-        assertThat(deserialized)
-                .usingRecursiveComparison()
-                .isEqualTo(deserialized2);
-    }
-
-    private static Stream<Arguments> provideCompactDeserializationData() {
-        return Stream.of(
-                Arguments.of(EmptyColumnDefinition.INSTANCE, "{}"),
-
-                Arguments.of(new DoubleColumnDefinition(), """
-                        {"kind":"double"}"""),
-                Arguments.of(new DateColumnDefinition(), """
-                        {"kind":"date"}"""),
-                Arguments.of(new StringColumnDefinition(), """
-                        {"kind":"string"}""")
-        );
-    }*/
 }
