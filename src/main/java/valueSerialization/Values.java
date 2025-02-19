@@ -1,5 +1,6 @@
 package valueSerialization;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.jetbrains.annotations.NotNull;
 
@@ -7,25 +8,25 @@ import java.math.BigDecimal;
 import java.time.*;
 
 @JsonSerialize(using = ValueSerializer.class)
-//@JsonDeserialize(using = .class)
+@JsonDeserialize(using = ValueDeserializer.class)
 sealed interface Value permits Blank,
         BooleanValue, CurrencyValue, DateValue, DoubleValue, ErrorValue, IntegerValue, LongValue, StringValue, TimeValue,
         CustomValue, EnumValue {
-    @NotNull ValueKind getDiscriminator();
+    @NotNull ValueDiscriminator getDiscriminator();
 }
 
-enum ValueKind {
+enum ValueDiscriminator {
     BLANK("blank"),
     BOOLEAN("boolean"), CURRENCY("currency"), DATE("date"), DOUBLE("double"), ERROR("error"), INTEGER("integer"), LONG("long"), STRING("string"), TIME("time"),
     CUSTOM("custom"), ENUM("enum");
 
     private final @NotNull String name;
 
-    ValueKind(@NotNull String name) {
+    ValueDiscriminator(@NotNull String name) {
         this.name = name;
     }
 
-    public static ValueKind fromName(String text) {
+    public static ValueDiscriminator fromName(String text) {
         return text == null || text.isEmpty() ? null :
                 switch (text.trim().toLowerCase()) {
                     case "blank" -> BLANK;
@@ -62,8 +63,8 @@ final class Blank implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.BLANK;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.BLANK;
     }
 }
 
@@ -77,8 +78,8 @@ record BooleanValue(boolean value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.BOOLEAN;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.BOOLEAN;
     }
 }
 
@@ -89,8 +90,8 @@ record CurrencyValue(@NotNull BigDecimal value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.CURRENCY;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.CURRENCY;
     }
 }
 
@@ -101,8 +102,8 @@ record CustomValue<T>(@NotNull T value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.CUSTOM;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.CUSTOM;
     }
 }
 
@@ -113,8 +114,8 @@ record DateValue(@NotNull LocalDateTime value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.DATE;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.DATE;
     }
 }
 
@@ -125,8 +126,8 @@ record DoubleValue(double value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.DOUBLE;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.DOUBLE;
     }
 }
 
@@ -137,8 +138,8 @@ record EnumValue<T extends Enum<?>>(@NotNull T value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.ENUM;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.ENUM;
     }
 }
 
@@ -149,8 +150,8 @@ record ErrorValue(@NotNull String message) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.ERROR;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.ERROR;
     }
 }
 
@@ -161,8 +162,8 @@ record IntegerValue(int value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.INTEGER;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.INTEGER;
     }
 }
 
@@ -173,8 +174,8 @@ record LongValue(long value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.LONG;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.LONG;
     }
 }
 
@@ -185,8 +186,8 @@ record StringValue(@NotNull String value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.STRING;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.STRING;
     }
 }
 
@@ -197,7 +198,7 @@ record TimeValue(@NotNull LocalTime value) implements Value {
     }
 
     @Override
-    public @NotNull ValueKind getDiscriminator() {
-        return ValueKind.TIME;
+    public @NotNull ValueDiscriminator getDiscriminator() {
+        return ValueDiscriminator.TIME;
     }
 }

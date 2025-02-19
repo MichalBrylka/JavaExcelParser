@@ -1,16 +1,17 @@
 package valueSerialization;
 
+import java.time.*;
+import java.util.*;
 import java.util.function.Function;
 import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Map;
-import java.util.List;
+
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.*;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.*;
+
+import static valueSerialization.ValueCommons.*;
 
 final class ValueCommons {
     static final String TYPE = "type";
@@ -32,8 +33,6 @@ final class ValueCommons {
             CUSTOM_TYPE_PARSERS.keySet().stream().collect(Collectors.toMap(Class::getSimpleName, Function.identity()));
 }
 
-//TODO write test to check if enum/customs have toString and from() methods
-
 final class ValueSerializer extends JsonSerializer<Value> {
     @Override
     public void serialize(Value variable, JsonGenerator gen, SerializerProvider serializers) throws IOException {
@@ -47,7 +46,7 @@ final class ValueSerializer extends JsonSerializer<Value> {
 
 
         switch (variable) {
-            case Blank blank -> {
+            case Blank ignored -> {
                 //do nothing - {} is special case
             }
             case BooleanValue(var bool) -> gen.writeBooleanField(discriminator, bool);
@@ -70,11 +69,11 @@ final class ValueSerializer extends JsonSerializer<Value> {
 
             case CustomValue(var custom) -> {
                 gen.writeStringField(discriminator, custom.toString());
-                writeClass(gen, custom.getClass(), ValueCommons.CUSTOM_TYPE_MAP);
+                writeClass(gen, custom.getClass(), CUSTOM_TYPE_MAP);
             }
             case EnumValue(var enumVal) -> {
                 gen.writeStringField(discriminator, enumVal.toString());
-                writeClass(gen, enumVal.getClass(), ValueCommons.ENUM_TYPE_MAP);
+                writeClass(gen, enumVal.getClass(), ENUM_TYPE_MAP);
             }
 
             default -> throw new IllegalStateException(variable.getClass().getSimpleName() + " is not supported");
@@ -85,7 +84,108 @@ final class ValueSerializer extends JsonSerializer<Value> {
 
 
     private static void writeClass(JsonGenerator gen, Class<?> clazz, Map<String, ?> map) throws IOException {
-        var typeName = map.entrySet().stream().filter(kvp -> clazz.equals(kvp.getValue())).findFirst().orElseThrow(() -> new IllegalStateException(clazz.getSimpleName() + " is not supported")).getKey();
-        gen.writeStringField(ValueCommons.TYPE, typeName);
+        var typeName = map.entrySet().stream().filter(kvp -> clazz.equals(kvp.getValue())).findFirst()
+                .orElseThrow(() -> new IllegalStateException(clazz.getSimpleName() + " is not supported")).getKey();
+        gen.writeStringField(TYPE, typeName);
     }
 }
+
+final class ValueDeserializer extends JsonDeserializer<Value> {
+
+    @Override
+    public Value deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+        JsonNode node = p.readValueAsTree();
+        if (!node.isObject())
+            throw new JsonParseException(p, "Only object literals ('{ something }') are supported in Value schema");
+
+        List<String> fields = convertIteratorToList(node.fieldNames());
+        return switch (fields.size()) {
+            case 0 -> Blank.INSTANCE; //by convention default value is Blank
+            case 1 -> {
+                String discriminatorText = fields.getFirst();
+                var discriminator = ValueDiscriminator.fromName(discriminatorText);
+                var valueNode = node.get(discriminatorText);
+
+                Value ret = switch (discriminator) {
+                    case BOOLEAN -> valueNode instanceof BooleanNode bn ? new BooleanValue(bn.booleanValue()) : null;
+
+                    case CURRENCY -> valueNode instanceof NumericNode nn ? new CurrencyValue(nn.decimalValue()) : null;
+                    case DOUBLE -> valueNode instanceof NumericNode nn ? new DoubleValue(nn.doubleValue()) : null;
+                    case INTEGER -> valueNode instanceof NumericNode nn ? new IntegerValue(nn.intValue()) : null;
+                    case LONG -> valueNode instanceof NumericNode nn ? new LongValue(nn.longValue()) : null;
+
+                    case ERROR -> valueNode instanceof TextNode tn ? new ErrorValue(tn.textValue()) : null;
+                    case STRING -> valueNode instanceof TextNode tn ? new StringValue(tn.textValue()) : null;
+
+                    case DATE ->
+                            valueNode instanceof TextNode tn ? new DateValue(parseLocalDateTime(tn.textValue())) : null;
+                    case TIME ->
+                            valueNode instanceof TextNode tn ? new TimeValue(LocalTime.parse(tn.textValue())) : null;
+
+                    default -> null;
+                };
+                if (ret == null)
+                    throw schemaFail(p);
+                else yield ret;
+            }
+            case 2 -> {
+                if (!fields.contains(TYPE))
+                    yield null;
+                fields.remove(TYPE);
+
+                var typeText = node.get(TYPE).asText();
+
+                String discriminatorText = fields.getFirst();
+                var discriminator = ValueDiscriminator.fromName(discriminatorText);
+                var valueText = node.get(discriminatorText).asText();
+
+                Value ret = switch (discriminator) {
+                    case CUSTOM -> {
+                        var clazz = CUSTOM_TYPE_MAP.get(typeText);
+                        if (clazz == null) yield null;
+
+                        var parser = CUSTOM_TYPE_PARSERS.get(clazz);
+                        var parsed = parser.apply(valueText);
+                        yield new CustomValue<>(parsed);
+                    }
+
+                    case ENUM -> {
+                        var clazz = ENUM_TYPE_MAP.get(typeText);
+                        if (clazz == null) yield null;
+
+                        var parser = ENUM_PARSERS.get(clazz);
+                        var parsed = parser.apply(valueText);
+                        yield new EnumValue<>(parsed);
+                    }
+
+                    default -> null;
+                };
+                if (ret == null)
+                    throw schemaFail(p);
+                else yield ret;
+            }
+            default -> throw schemaFail(p);
+        };
+    }
+
+    private static LocalDateTime parseLocalDateTime(String text) {
+        return text.contains("T") ? LocalDateTime.parse(text) : LocalDate.parse(text).atStartOfDay();
+    }
+
+    private JacksonException schemaFail(JsonParser p) {
+        return new JsonParseException(p, """
+                Invalid schema for Value. Supported schema are:
+                {} -> blank
+                {"boolean|currency|date|double|error|integer|long|string|time": "VALUE"}
+                {"custom|enum": "VALUE", "type": "SIMPLE CLASS NAME"}
+                """);
+    }
+
+    private static List<String> convertIteratorToList(Iterator<String> iterator) {
+        List<String> list = new ArrayList<>();
+        while (iterator.hasNext())
+            list.add(iterator.next());
+        return list;
+    }
+}
+

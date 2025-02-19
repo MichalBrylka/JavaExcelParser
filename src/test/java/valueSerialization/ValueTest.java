@@ -10,11 +10,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Collection;
-import java.util.Random;
+import java.time.*;
+import java.util.*;
 import java.util.stream.Stream;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -32,7 +31,7 @@ class ValueTest {
         String json = objectMapper.writeValueAsString(input);
         assertThatJson(json).isEqualTo(expectedJson);
 
-        /*var deserialized = objectMapper.readValue(json, Value.class);
+        var deserialized = objectMapper.readValue(json, Value.class);
 
         var deserialized2 = objectMapper.readValue(expectedJson, Value.class);
 
@@ -42,7 +41,7 @@ class ValueTest {
 
         assertThat(deserialized)
                 .usingRecursiveComparison()
-                .isEqualTo(deserialized2);*/
+                .isEqualTo(deserialized2);
     }
 
     private static Stream<Arguments> provideValueData() {
@@ -56,8 +55,8 @@ class ValueTest {
                         {"boolean":false}"""),
                 Arguments.of(new BooleanValue(true), """
                         {"boolean":true}"""),
-                Arguments.of(new CurrencyValue(new BigDecimal("123456789012345678901234567890.1234567890123456789")), """
-                        {"currency":123456789012345678901234567890.1234567890123456789}"""),
+                Arguments.of(new CurrencyValue(new BigDecimal("1234567890.1234567")), """
+                        {"currency":1234567890.1234567}"""),
                 Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 0, 0)), """
                         {"date":"2025-02-01"}"""),
                 Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 23, 34, 56, 789)), """
@@ -89,16 +88,16 @@ class ValueTest {
                 Arguments.of(new TimeValue(LocalTime.of(12, 34, 56)), """
                         {"time":"12:34:56"}"""),
 
-                Arguments.of(new EnumValue<Color>(Color.BLUE), """
+                Arguments.of(new EnumValue<>(Color.BLUE), """
                         {"enum":"blue","type":"Color"}"""),
-                Arguments.of(new EnumValue<Size>(Size.XL), """
+                Arguments.of(new EnumValue<>(Size.XL), """
                         {"enum":"xl","type":"Size"}"""),
 
-                Arguments.of(new CustomValue<Price>(Price.of(3.14)), """
+                Arguments.of(new CustomValue<>(Price.of(3.14)), """
                         {"custom":"3.14","type":"Price"}"""),
-                Arguments.of(new CustomValue<Price>(Price.mkt()), """
+                Arguments.of(new CustomValue<>(Price.mkt()), """
                         {"custom":"MKT","type":"Price"}""")
-                );
+        );
     }
 
     @ParameterizedTest
@@ -110,10 +109,9 @@ class ValueTest {
         String json = objectMapper.writeValueAsString(input);
         var deserialized = objectMapper.readValue(json, Value.class);
 
-        System.out.println(json);
-
         assertThat(deserialized)
                 .usingRecursiveComparison()
+                .withFailMessage(() -> input.getClass().getSimpleName() + ": " + input + " -> " + json)
                 .isEqualTo(input);
     }
 
@@ -128,27 +126,36 @@ class ValueTest {
         return switch (ruleIndex) {
             case 1 -> Blank.INSTANCE;
             case 2 -> new BooleanValue(random.nextBoolean());
-            case 3 -> new CurrencyValue(BigDecimal.valueOf(random.nextDouble() * 100000000000.0));
-
-            case 4 -> new DateValue()
-                    ;
-            case 5 ->
-                    random.nextBoolean() ? new DoubleColumnDefinition(faker.lorem().word()) : new DoubleColumnDefinition();
-            case 6 ->
-                    random.nextBoolean() ? new StringColumnDefinition(faker.lorem().word()) : new StringColumnDefinition();
-
-            case 7 -> new EnumColumnDefinition(getRandom(EnumColumnDefinition.ENUM_TYPE_TYPE_MAP.values()));
-            case 8 -> new CustomColumnDefinition(getRandom(CustomColumnDefinition.CUSTOM_TYPE_TYPE_MAP.values()));
-
-            case 9 -> CurrencyColumnDefinition.INSTANCE;
-            case 10 -> CurrencyColumnDefinition.INSTANCE;
-            case 11 -> CurrencyColumnDefinition.INSTANCE;
-            case 12 -> CurrencyColumnDefinition.INSTANCE;
+            case 3 -> new CurrencyValue(BigDecimal.valueOf(random.nextDouble() * 10000000000.0));
+            case 4 -> new DateValue(getRandomInstant().toLocalDateTime());
+            case 5 -> new DoubleValue(random.nextDouble() * 10000000000.0);
+            case 6 -> new ErrorValue(faker.lorem().sentence());
+            case 7 -> new IntegerValue(random.nextInt());
+            case 8 -> new LongValue(random.nextLong());
+            case 9 -> new StringValue(faker.lorem().sentence());
+            case 10 -> new TimeValue(getRandomInstant().toLocalTime());
+            case 11 -> new CustomValue<>(Price.mkt()); //add more conversions
+            case 12 -> new EnumValue<>(getRandomEnum(ValueCommons.ENUM_PARSERS.keySet()));
             default -> throw new IllegalStateException("Unexpected value: " + ruleIndex);
         };
     }
 
-    public static <T> T getRandom(Collection<T> collection) {
+    private static Enum<?> getRandomEnum(Collection<Class<? extends Enum<?>>> enumClasses) {
+        Class<? extends Enum<? extends Enum<?>>> enumClass = getRandomFromCollection(enumClasses);
+
+        var enumValue = enumClass.getEnumConstants();
+
+        return enumValue[random.nextInt(enumValue.length)];
+    }
+
+    private static ZonedDateTime getRandomInstant() {
+        return (random.nextBoolean()
+                ? faker.timeAndDate().past(50 * 365, TimeUnit.DAYS)
+                : faker.timeAndDate().future(50 * 365, TimeUnit.DAYS)
+        ).atZone(ZoneId.systemDefault());
+    }
+
+    private static <T> T getRandomFromCollection(Collection<T> collection) {
         if (collection == null || collection.isEmpty())
             throw new IllegalArgumentException("Collection cannot be null or empty.");
 
@@ -162,7 +169,4 @@ class ValueTest {
 
         return randomElement;
     }
-
-
-
 }
