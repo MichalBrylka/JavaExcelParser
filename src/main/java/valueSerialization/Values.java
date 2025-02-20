@@ -22,6 +22,10 @@ enum ValueDiscriminator {
 
     private final @NotNull String name;
 
+    public @NotNull String getName() {
+        return name;
+    }
+
     ValueDiscriminator(@NotNull String name) {
         this.name = name;
     }
@@ -46,16 +50,11 @@ enum ValueDiscriminator {
                     default -> null;
                 };
     }
-
-    @Override
-    public String toString() {
-        return name;
-    }
 }
 
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 final class Blank implements Value {
-    public static final Value INSTANCE = new Blank();
+    public static final Value BLANK = new Blank();
 
     @Override
     public String toString() {

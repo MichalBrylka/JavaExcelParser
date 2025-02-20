@@ -42,7 +42,7 @@ final class ValueSerializer extends JsonSerializer<Value> {
         }
         gen.writeStartObject();
 
-        String discriminator = variable.getDiscriminator().toString();
+        String discriminator = variable.getDiscriminator().getName();
 
 
         switch (variable) {
@@ -100,7 +100,7 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
 
         List<String> fields = convertIteratorToList(node.fieldNames());
         return switch (fields.size()) {
-            case 0 -> Blank.INSTANCE; //by convention default value is Blank
+            case 0 -> Blank.BLANK; //by convention default value is Blank
             case 1 -> {
                 String discriminatorText = fields.getFirst();
                 var discriminator = ValueDiscriminator.fromName(discriminatorText);

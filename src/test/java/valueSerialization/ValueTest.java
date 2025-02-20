@@ -48,7 +48,7 @@ class ValueTest {
         return Stream.of(
                 Arguments.of(null, "null"),
 
-                Arguments.of(Blank.INSTANCE, """
+                Arguments.of(Blank.BLANK, """
                         {}"""),
 
                 Arguments.of(new BooleanValue(false), """
@@ -124,7 +124,7 @@ class ValueTest {
         int ruleIndex = random.nextInt(12) + 1;
 
         return switch (ruleIndex) {
-            case 1 -> Blank.INSTANCE;
+            case 1 -> Blank.BLANK;
             case 2 -> new BooleanValue(random.nextBoolean());
             case 3 -> new CurrencyValue(BigDecimal.valueOf(random.nextDouble() * 10000000000.0));
             case 4 -> new DateValue(getRandomInstant().toLocalDateTime());
