@@ -39,4 +39,21 @@ public class EnumHelper {
                 .collect(Collectors.joining(", "));
         throw new IllegalArgumentException("No enum constant in " + enumClass.getSimpleName() + " with name: " + name + ". Allowed values: " + allowedValues);
     }
+
+    public static <T extends Enum<T> & NamedEnum> T fromNamed(Class<T> enumClass, final String name) {
+        return fromNamed(enumClass, name, false);
+    }
+
+    public static <T extends Enum<T> & NamedEnum> T fromNamed(Class<T> enumClass, final String name, boolean caseSensitive) {
+        for (T constant : enumClass.getEnumConstants()) {
+            String fieldValue = constant.getName();
+            if (caseSensitive ? fieldValue.equals(name) : fieldValue.equalsIgnoreCase(name)) {
+                return constant;
+            }
+        }
+        String allowedValues = Arrays.stream(enumClass.getEnumConstants())
+                .map(NamedEnum::getName)
+                .collect(Collectors.joining(", "));
+        throw new IllegalArgumentException("No enum constant in " + enumClass.getSimpleName() + " with name: " + name + ". Allowed values: " + allowedValues);
+    }
 }

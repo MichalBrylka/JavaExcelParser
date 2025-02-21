@@ -1,10 +1,16 @@
 package valueSerialization;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 
-enum Color {
+interface NamedEnum {
+    @NotNull String getName();
+}
+
+enum Color implements NamedEnum {
     RED("red"), GREEN("green"), BLUE("blue");
     private final String name;
 
@@ -27,9 +33,15 @@ enum Color {
     public String toString() {
         return name;
     }
+
+    @Override
+    @NotNull
+    public String getName() {
+        return name;
+    }
 }
 
-enum Size {
+enum Size implements NamedEnum {
     S("s"), M("m"), L("l"), XL("xl");
     private final String name;
 
@@ -50,6 +62,12 @@ enum Size {
 
     @Override
     public String toString() {
+        return name;
+    }
+
+    @Override
+    @NotNull
+    public String getName() {
         return name;
     }
 }
