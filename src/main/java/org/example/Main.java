@@ -1,12 +1,13 @@
 package org.example;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-
+@Slf4j
 public class Main {
     public static void main(String[] args) throws IOException {
         List<ColumnDefinition<?>> dataTypes = Arrays.asList(
@@ -29,11 +30,15 @@ public class Main {
 
         var headerTypes = Collections.nCopies(10, new StringColumnDefinition());
 
+        assert rows != null && !rows.isEmpty();
         var header = parseValues(rows.getFirst(), headerTypes).stream().map(h -> ((StringValue) h).value()).toList();
         var data = rows.stream().skip(1).map(row -> parseValues(row, dataTypes)).toList();
+
+        log.info(String.valueOf(header));
+        log.info(String.valueOf(data));
     }
 
-    private static List<Value> parseValues(ParsedRow parsedRow, List<? extends ColumnDefinition> columnDefinitions) {
+    private static List<Value> parseValues(ParsedRow parsedRow, List<? extends ColumnDefinition<?>> columnDefinitions) {
         var cellValues = parsedRow.cellValues();
 
         if (cellValues.size() != columnDefinitions.size()) throw new IllegalStateException("Meta size do not match");
@@ -68,8 +73,8 @@ public class Main {
             }
             return parsedRows;
         } catch (IOException e) {
-            System.err.println("Error reading the Excel file: " + e.getMessage());
-            return null;
+            log.error("Error reading the Excel file: {}", e.getMessage());
+            return List.of();
         }
     }
 

@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -63,9 +64,16 @@ enum ColumnDefinitionKind {
 }
 
 final class ColumnDefinitionCommons {
+    private ColumnDefinitionCommons() {
+    }
+
     static final String KIND = "kind";
     static final String FORMAT = "format";
     static final String TYPE = "type";
+
+    static IllegalStateException notSupported(Class<?> clazz) {
+        return new IllegalStateException(clazz.getSimpleName() + " is not supported");
+    }
 }
 
 final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<? extends Value>> {
@@ -78,7 +86,7 @@ final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<?
         gen.writeStartObject();
 
         if (!(columnDefinition.getKind() instanceof ColumnDefinitionKind kind))
-            throw new IllegalStateException(columnDefinition.getClass().getSimpleName() + " is not supported");
+            throw ColumnDefinitionCommons.notSupported(columnDefinition.getClass());
         gen.writeStringField(ColumnDefinitionCommons.KIND, kind.toString());
 
         switch (columnDefinition) {
@@ -109,7 +117,7 @@ final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<?
                 break;
 
             default:
-                throw new IllegalStateException(columnDefinition.getClass().getSimpleName() + " is not supported");
+                throw ColumnDefinitionCommons.notSupported(columnDefinition.getClass());
         }
         gen.writeEndObject();
     }
@@ -119,7 +127,7 @@ final class ColumnDefinitionSerializer extends JsonSerializer<ColumnDefinition<?
     }
 
     private static void writeClass(JsonGenerator gen, Class<?> clazz, Map<String, ?> map) throws IOException {
-        var typeName = map.entrySet().stream().filter(kvp -> clazz.equals(kvp.getValue())).findFirst().orElseThrow(() -> new IllegalStateException(clazz.getSimpleName() + " is not supported")).getKey();
+        var typeName = map.entrySet().stream().filter(kvp -> clazz.equals(kvp.getValue())).findFirst().orElseThrow(() -> ColumnDefinitionCommons.notSupported(clazz)).getKey();
         gen.writeStringField(ColumnDefinitionCommons.TYPE, typeName);
     }
 }
@@ -387,7 +395,7 @@ final class CurrencyColumnDefinition implements ColumnDefinition<CurrencyValueBa
     @Override
     public CurrencyValueBase getValue(CellValue cellValue) {
         return switch (cellValue) {
-            case NumberCellValue(var num) -> new CurrencyValue(new BigDecimal(num));
+            case NumberCellValue(var num) -> new CurrencyValue(BigDecimal.valueOf(num));
             case StringCellValue(var text) -> {
                 try {
                     var df = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
@@ -493,7 +501,7 @@ record CustomColumnDefinition(Class<?> customType) implements ColumnDefinition<C
             Price.class, Price::parse
     );
 
-    private static final Map<Class<?>, Function<Double, ?>> numberParsers = Map.of(
+    private static final Map<Class<?>, DoubleFunction<?>> numberParsers = Map.of(
             Price.class, Price::of
     );
 
