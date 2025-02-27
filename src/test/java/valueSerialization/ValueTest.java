@@ -37,10 +37,14 @@ class ValueTest {
 
         assertThat(deserialized)
                 .usingRecursiveComparison()
+                .withEqualsForType((a, b) ->
+                        (Double.isNaN(a) && Double.isNaN(b)) || a.equals(b), Double.class)
                 .isEqualTo(input);
 
         assertThat(deserialized)
                 .usingRecursiveComparison()
+                .withEqualsForType((a, b) ->
+                        (Double.isNaN(a) && Double.isNaN(b)) || a.equals(b), Double.class)
                 .isEqualTo(deserialized2);
     }
 
@@ -65,8 +69,16 @@ class ValueTest {
                         {"double":0.0}"""),
                 Arguments.of(new DoubleValue(3.141592653589793), """
                         {"double":3.141592653589793}"""),
+                Arguments.of(new DoubleValue(3141592653589793.0), """
+                        {"double":3141592653589793}"""),
                 Arguments.of(new DoubleValue(Double.MAX_VALUE), """
                         {"double":1.7976931348623157E+308}"""),
+                Arguments.of(new DoubleValue(Double.NaN), """
+                        {"double":"NaN"}"""),
+                Arguments.of(new DoubleValue(Double.POSITIVE_INFINITY), """
+                        {"double":"∞"}"""),
+                Arguments.of(new DoubleValue(Double.NEGATIVE_INFINITY), """
+                        {"double":"-∞"}"""),
                 Arguments.of(new ErrorValue(""), """
                         {"error":""}"""),
                 Arguments.of(new ErrorValue("Something was wrong"), """

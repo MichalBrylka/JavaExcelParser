@@ -52,7 +52,7 @@ final class ValueSerializer extends JsonSerializer<Value> {
             case BooleanValue(var bool) -> gen.writeBooleanField(discriminator, bool);
 
             case CurrencyValue(var num) -> gen.writeNumberField(discriminator, num);
-            case DoubleValue(var num) -> gen.writeNumberField(discriminator, num);
+            case DoubleValue(var num) -> writeDouble(gen, num, discriminator);
             case IntegerValue(var num) -> gen.writeNumberField(discriminator, num);
             case LongValue(var num) -> gen.writeNumberField(discriminator, num);
 
@@ -80,6 +80,14 @@ final class ValueSerializer extends JsonSerializer<Value> {
         }
 
         gen.writeEndObject();
+    }
+
+    private static void writeDouble(JsonGenerator gen, double value, String field) throws IOException {
+        if (Double.isNaN(value)) gen.writeStringField(field, "NaN");
+        else if (value == Double.POSITIVE_INFINITY) gen.writeStringField(field, "∞");
+        else if (value == Double.NEGATIVE_INFINITY) gen.writeStringField(field, "-∞");
+        else
+            gen.writeNumberField(field, value);
     }
 
 
@@ -110,7 +118,7 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
                     case BOOLEAN -> valueNode instanceof BooleanNode bn ? new BooleanValue(bn.booleanValue()) : null;
 
                     case CURRENCY -> valueNode instanceof NumericNode nn ? new CurrencyValue(nn.decimalValue()) : null;
-                    case DOUBLE -> valueNode instanceof NumericNode nn ? new DoubleValue(nn.doubleValue()) : null;
+                    case DOUBLE -> parseDouble(valueNode);
                     case INTEGER -> valueNode instanceof NumericNode nn ? new IntegerValue(nn.intValue()) : null;
                     case LONG -> valueNode instanceof NumericNode nn ? new LongValue(nn.longValue()) : null;
 
@@ -168,6 +176,23 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
         };
     }
 
+    private static DoubleValue parseDouble(JsonNode valueNode) {
+        return switch (valueNode) {
+            case NumericNode nn -> new DoubleValue(nn.doubleValue());
+            case TextNode tn when tn.asText() instanceof String text -> {
+                double d = switch (text.trim().toLowerCase()) {
+                    case "nan" -> Double.NaN;
+                    case "∞", "+∞" -> Double.POSITIVE_INFINITY;
+                    case "-∞" -> Double.NEGATIVE_INFINITY;
+                    default -> Double.parseDouble(text);
+                };
+                yield new DoubleValue(d);
+            }
+            case null, default -> null;
+        };
+    }
+
+
     private static LocalDateTime parseLocalDateTime(String text) {
         return text.contains("T") ? LocalDateTime.parse(text) : LocalDate.parse(text).atStartOfDay();
     }
@@ -176,7 +201,13 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
         return new JsonParseException(p, """
                 Invalid schema for Value. Supported schema are:
                 {} -> blank
-                {"boolean|currency|date|double|error|integer|long|string|time": "VALUE"}
+                {"boolean": true or false}
+                {"currency|double": floating point number}
+                {"integer|long": integer number}
+                {"error": "error message"}
+                {"string": "text"}
+                {"date": "yyyy-MM-dd or ISO date-time"}
+                {"time": "HH:mm:ss or HH:mm"}
                 {"custom|enum": "VALUE", "type": "SIMPLE CLASS NAME"}
                 """);
     }
