@@ -1,9 +1,11 @@
 package valueSerialization;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import net.datafaker.Faker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -26,8 +28,8 @@ class ValueTest {
     @MethodSource("provideValueData")
     @DisplayName("test serialization and deserialization - sample data")
     void testSerializationAndDeserialization_UsingProvideData(Value input, String expectedJson) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        var objectMapper = getMapper();
+
         String json = objectMapper.writeValueAsString(input);
         assertThatJson(json).isEqualTo(expectedJson);
 
@@ -61,6 +63,9 @@ class ValueTest {
                         {"boolean":true}"""),
                 Arguments.of(new CurrencyValue(new BigDecimal("1234567890.1234567")), """
                         {"currency":1234567890.1234567}"""),
+                Arguments.of(new CurrencyValue(new BigDecimal("123456789012345678901234567890.1234567890123456789")), """
+                        {"currency":123456789012345678901234567890.1234567890123456789}"""),
+
                 Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 0, 0)), """
                         {"date":"2025-02-01"}"""),
                 Arguments.of(new DateValue(LocalDateTime.of(2025, 2, 1, 23, 34, 56, 789)), """
@@ -116,8 +121,7 @@ class ValueTest {
     @MethodSource("faked")
     @DisplayName("test serialization and deserialization - generated")
     void testSerializationAndDeserialization_UsingFaker(Value input) throws JsonProcessingException {
-        var objectMapper = new ObjectMapper();
-        objectMapper.disable(SerializationFeature.INDENT_OUTPUT);
+        var objectMapper = getMapper();
         String json = objectMapper.writeValueAsString(input);
         var deserialized = objectMapper.readValue(json, Value.class);
 
@@ -129,7 +133,7 @@ class ValueTest {
 
     private static Stream<Value> faked() {
         return Stream.generate(ValueTest::getRandomValue)
-                .limit(40);
+                .limit(80);
     }
 
     private static Value getRandomValue() {
@@ -180,5 +184,12 @@ class ValueTest {
         }
 
         return randomElement;
+    }
+
+    private static @NotNull ObjectMapper getMapper() {
+        var objectMapper = new ObjectMapper();
+        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        objectMapper.enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+        return objectMapper;
     }
 }

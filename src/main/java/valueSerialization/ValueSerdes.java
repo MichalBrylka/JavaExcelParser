@@ -1,5 +1,6 @@
 package valueSerialization;
 
+import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 import java.util.function.Function;
@@ -14,6 +15,9 @@ import com.fasterxml.jackson.databind.node.*;
 import static valueSerialization.ValueCommons.*;
 
 final class ValueCommons {
+    private ValueCommons() {
+    }
+
     static final String TYPE = "type";
 
     static final Map<Class<? extends Enum<?>>, Function<String, ? extends Enum<?>>> ENUM_PARSERS = Map.of(
@@ -117,7 +121,7 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
                 Value ret = switch (discriminator) {
                     case BOOLEAN -> valueNode instanceof BooleanNode bn ? new BooleanValue(bn.booleanValue()) : null;
 
-                    case CURRENCY -> valueNode instanceof NumericNode nn ? new CurrencyValue(nn.decimalValue()) : null;
+                    case CURRENCY -> parseCurrency(valueNode);
                     case DOUBLE -> parseDouble(valueNode);
                     case INTEGER -> valueNode instanceof NumericNode nn ? new IntegerValue(nn.intValue()) : null;
                     case LONG -> valueNode instanceof NumericNode nn ? new LongValue(nn.longValue()) : null;
@@ -176,10 +180,20 @@ final class ValueDeserializer extends JsonDeserializer<Value> {
         };
     }
 
+    private CurrencyValue parseCurrency(JsonNode valueNode) {
+        return switch (valueNode) {
+            case DecimalNode dn -> new CurrencyValue(dn.decimalValue());
+            case NumericNode nn -> new CurrencyValue(new BigDecimal(nn.asText()));
+            case TextNode tn when tn.textValue() instanceof String text && !text.isBlank() ->
+                    new CurrencyValue(new BigDecimal(text));
+            case null, default -> null;
+        };
+    }
+
     private static DoubleValue parseDouble(JsonNode valueNode) {
         return switch (valueNode) {
             case NumericNode nn -> new DoubleValue(nn.doubleValue());
-            case TextNode tn when tn.asText() instanceof String text -> {
+            case TextNode tn when tn.textValue() instanceof String text -> {
                 double d = switch (text.trim().toLowerCase()) {
                     case "nan" -> Double.NaN;
                     case "∞", "+∞" -> Double.POSITIVE_INFINITY;
