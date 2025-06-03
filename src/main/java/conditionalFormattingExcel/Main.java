@@ -7,6 +7,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.awt.Desktop;
+import java.util.Map;
 
 
 @Slf4j
@@ -18,13 +19,12 @@ public class Main {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Formats");
 
-     /*   Format formatUsd = new Format.CurrencyFormat(2, "$");
-        Format formatPercent = new Format.PercentFormat(1);
-        Format formatDecimal = new Format.FixedFormat(8);
+        NumberFormat numberFormat = new NumberFormat(4, 1, 2);
 
-        writeFormattedCell(sheet, formatUsd, new CellAddress("A1"), 1234.56);
-        writeFormattedCell(sheet, formatPercent, new CellAddress("B1"), 0.875);
-        writeFormattedCell(sheet, formatDecimal, new CellAddress("C1"), 3.1415926);*/
+        writeFormattedCell(sheet, numberFormat, new CellAddress("A1"), FormattableNumber.ofCurrency(1234.56789, "$"));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("B1"), FormattableNumber.ofPercentRaw(0.875));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("C1"), FormattableNumber.ofFixed(3.1415926));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("D1"), FormattableNumber.ofCurrency(1234.56789, "PLN"));
 
         try (FileOutputStream out = new FileOutputStream(tempFile)) {
             workbook.write(out);
@@ -37,58 +37,80 @@ public class Main {
         printNonEmptyCellsWithFormat(tempFile);
     }
 
-    /*static void writeFormattedCell(Sheet sheet, Format format, CellAddress address, double value) {
+    static void writeFormattedCell(Sheet sheet, NumberFormat numberFormat, CellAddress address, FormattableNumber number) {
         Workbook workbook = sheet.getWorkbook();
 
         // Create or get row
         Row row = sheet.getRow(address.getRow());
-        if (row == null) {
-            row = sheet.createRow(address.getRow());
-        }
+        if (row == null) row = sheet.createRow(address.getRow());
 
         // Create or get cell
         Cell cell = row.getCell(address.getColumn());
-        if (cell == null) {
-            cell = row.createCell(address.getColumn());
-        }
+        if (cell == null) cell = row.createCell(address.getColumn());
 
         // Write value
-        cell.setCellValue(value);
+        cell.setCellValue(number.rawNumber());
 
         // Create data format
         DataFormat dataFormat = workbook.createDataFormat();
         CellStyle cellStyle = workbook.createCellStyle();
 
-        StringBuilder formatString = new StringBuilder();
 
-        if (format instanceof Format.PercentFormat(var decimalPlaces)) {
-            formatString.append("0");
-            if (decimalPlaces > 0) {
-                formatString.append(".");
-                formatString.append("0".repeat(decimalPlaces));
-            }
-            formatString.append("%");
-        } else if (format instanceof Format.CurrencyFormat(
-                var decimalPlaces, var symbol
-        ) && symbol != null && !symbol.isEmpty()) {
-            formatString.append("\"").append(symbol).append("\"");
-            formatString.append("#,##0");
+        String formatString = getPoiFormatString(number, numberFormat);
 
-            if (decimalPlaces > 0) {
-                formatString.append(".");
-                formatString.append("0".repeat(decimalPlaces));
-            }
-        } else if (format instanceof Format.FixedFormat(var decimalPlaces)) {
-            formatString.append("0");
-            if (decimalPlaces > 0) {
-                formatString.append(".");
-                formatString.append("0".repeat(decimalPlaces));
-            }
-        }
 
-        cellStyle.setDataFormat(dataFormat.getFormat(formatString.toString()));
+        cellStyle.setDataFormat(dataFormat.getFormat(formatString));
         cell.setCellStyle(cellStyle);
-    }*/
+    }
+
+    private static String getPoiFormatString(FormattableNumber number, NumberFormat numberFormat) {
+        return switch (number) {
+            case FormattableNumber.Fixed ignored -> {
+                var sb = new StringBuilder();
+                sb.append("0");
+                if (numberFormat.fixedDecimalPlaces() > 0)
+                    sb.append(".").append("0".repeat(numberFormat.fixedDecimalPlaces()));
+                yield sb.toString();
+            }
+
+            case FormattableNumber.Percentage ignored -> {
+                var sb = new StringBuilder();
+                sb.append("0");
+                if (numberFormat.percentDecimalPlaces() > 0)
+                    sb.append(".").append("0".repeat(numberFormat.percentDecimalPlaces()));
+                sb.append("%");
+                yield sb.toString();
+            }
+
+            case FormattableNumber.Currency(var ignored, String currencySymbol) -> {
+                var sb = new StringBuilder();
+                currencySymbol = currencySymbol.replace("\"", "\"\"");
+                boolean shouldAppend = shouldAppendCurrencySymbol(currencySymbol);
+
+                if (!shouldAppend)
+                    sb.append("\"").append(currencySymbol).append(" \"");
+
+                sb.append("#,##0");
+                if (numberFormat.currencyDecimalPlaces() > 0)
+                    sb.append(".").append("0".repeat(numberFormat.currencyDecimalPlaces()));
+
+                if (shouldAppend)
+                    sb.append(" \"").append(currencySymbol).append("\"");
+
+                yield sb.toString();
+            }
+        };
+
+    }
+
+    private static boolean shouldAppendCurrencySymbol(String symbol) {
+        symbol = symbol.trim();
+        return "zł".equals(symbol) || "PLN".equals(symbol);
+        // add other symbols here potentially adding locale parameter to this method
+        // For the Euro (EUR), symbol placement varies by country.
+        // In English-speaking countries, it's typically placed before the amount (e.g., €1,234.56),
+        // while in other European countries, it may appear after the amount with a non-breaking space (e.g., 1.234,56 €)
+    }
 
     @lombok.SneakyThrows
     static void printNonEmptyCellsWithFormat(File excelFile) {

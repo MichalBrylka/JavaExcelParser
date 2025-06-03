@@ -1,6 +1,9 @@
 package conditionalFormattingExcel;
 
+import org.jetbrains.annotations.NotNull;
+
 public sealed interface FormattableNumber permits FormattableNumber.Currency, FormattableNumber.Fixed, FormattableNumber.Percentage {
+    double rawNumber();
 
     static Fixed ofFixed(double value) {
         return new Fixed(value);
@@ -10,7 +13,7 @@ public sealed interface FormattableNumber permits FormattableNumber.Currency, Fo
         return new Currency(value, symbol);
     }
 
-    static Percentage ofRawPercentage(double value) {
+    static Percentage ofPercentRaw(double value) {
         return new Percentage(value);
     }
 
@@ -19,22 +22,22 @@ public sealed interface FormattableNumber permits FormattableNumber.Currency, Fo
     }
 
 
-    record Fixed(double value) implements FormattableNumber {
+    record Fixed(double rawNumber) implements FormattableNumber {
         @Override
         public String toString() {
-            return String.valueOf(value);
+            return String.valueOf(rawNumber);
         }
     }
 
-    record Percentage(double rawValue /*stored as fraction, e.g. 0.15 for 15%*/) implements FormattableNumber {
+    record Percentage(double rawNumber /*stored as fraction, e.g. 0.15 for 15%*/) implements FormattableNumber {
         @Override
         public String toString() {
-            return (rawValue * 100) + "%";
+            return (rawNumber * 100) + "%";
         }
     }
 
 
-    record Currency(double value, String symbol) implements FormattableNumber {
+    record Currency(double rawNumber, @NotNull String symbol) implements FormattableNumber {
         public Currency {
             if (symbol == null || symbol.isBlank())
                 throw new IllegalArgumentException("Currency symbol cannot be null or empty.");
@@ -42,7 +45,7 @@ public sealed interface FormattableNumber permits FormattableNumber.Currency, Fo
 
         @Override
         public String toString() {
-            return "%s %s".formatted(value, symbol);
+            return "%s %s".formatted(rawNumber, symbol);
         }
     }
 }
