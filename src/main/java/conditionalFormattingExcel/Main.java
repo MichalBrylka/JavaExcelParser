@@ -18,13 +18,13 @@ public class Main {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Formats");
 
-        Format formatUsd = new Format.CurrencyFormat(2, "$");
+     /*   Format formatUsd = new Format.CurrencyFormat(2, "$");
         Format formatPercent = new Format.PercentFormat(1);
         Format formatDecimal = new Format.FixedFormat(8);
 
         writeFormattedCell(sheet, formatUsd, new CellAddress("A1"), 1234.56);
         writeFormattedCell(sheet, formatPercent, new CellAddress("B1"), 0.875);
-        writeFormattedCell(sheet, formatDecimal, new CellAddress("C1"), 3.1415926);
+        writeFormattedCell(sheet, formatDecimal, new CellAddress("C1"), 3.1415926);*/
 
         try (FileOutputStream out = new FileOutputStream(tempFile)) {
             workbook.write(out);
@@ -37,7 +37,7 @@ public class Main {
         printNonEmptyCellsWithFormat(tempFile);
     }
 
-    static void writeFormattedCell(Sheet sheet, Format format, CellAddress address, double value) {
+    /*static void writeFormattedCell(Sheet sheet, Format format, CellAddress address, double value) {
         Workbook workbook = sheet.getWorkbook();
 
         // Create or get row
@@ -73,7 +73,7 @@ public class Main {
         ) && symbol != null && !symbol.isEmpty()) {
             formatString.append("\"").append(symbol).append("\"");
             formatString.append("#,##0");
-            
+
             if (decimalPlaces > 0) {
                 formatString.append(".");
                 formatString.append("0".repeat(decimalPlaces));
@@ -88,7 +88,7 @@ public class Main {
 
         cellStyle.setDataFormat(dataFormat.getFormat(formatString.toString()));
         cell.setCellStyle(cellStyle);
-    }
+    }*/
 
     @lombok.SneakyThrows
     static void printNonEmptyCellsWithFormat(File excelFile) {
