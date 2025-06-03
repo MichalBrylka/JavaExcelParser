@@ -2,6 +2,8 @@ package conditionalFormattingExcel;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.awt.Desktop;
@@ -11,59 +13,132 @@ import java.awt.Desktop;
 public class Main {
     @lombok.SneakyThrows
     public static void main(String[] args) {
-        var inputFile = new File(org.example.Main.class.getClassLoader().getResource("ConditionalFormatting.xlsx").getFile());
-        if (!inputFile.exists()) {
-            log.warn("File not found: {}", inputFile.getAbsolutePath());
-            return;
+        var tempFile = new File(System.getProperty("java.io.tmpdir"), "NumberFormats.xlsx");
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Formats");
+
+        Format formatUsd = new Format.CurrencyFormat(2, "$");
+        Format formatPercent = new Format.PercentFormat(1);
+        Format formatDecimal = new Format.FixedFormat(8);
+
+        writeFormattedCell(sheet, formatUsd, new CellAddress("A1"), 1234.56);
+        writeFormattedCell(sheet, formatPercent, new CellAddress("B1"), 0.875);
+        writeFormattedCell(sheet, formatDecimal, new CellAddress("C1"), 3.1415926);
+
+        try (FileOutputStream out = new FileOutputStream(tempFile)) {
+            workbook.write(out);
+        }
+        workbook.close();
+
+        if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(tempFile);
+        else log.error("Desktop opening not supported.");
+
+        printNonEmptyCellsWithFormat(tempFile);
+    }
+
+    static void writeFormattedCell(Sheet sheet, Format format, CellAddress address, double value) {
+        Workbook workbook = sheet.getWorkbook();
+
+        // Create or get row
+        Row row = sheet.getRow(address.getRow());
+        if (row == null) {
+            row = sheet.createRow(address.getRow());
         }
 
-        String outputFileName = "new_" + inputFile.getName();
-        File outputFile = new File(inputFile.getParent(), outputFileName);
+        // Create or get cell
+        Cell cell = row.getCell(address.getColumn());
+        if (cell == null) {
+            cell = row.createCell(address.getColumn());
+        }
 
-        FileInputStream fileIn = new FileInputStream(inputFile);
-        var workbook = WorkbookFactory.create(fileIn);
-        Sheet sheet = workbook.getSheetAt(0);
+        // Write value
+        cell.setCellValue(value);
+
+        // Create data format
         DataFormat dataFormat = workbook.createDataFormat();
+        CellStyle cellStyle = workbook.createCellStyle();
 
-        CellStyle fixedStyle = workbook.createCellStyle();
-        fixedStyle.setDataFormat(dataFormat.getFormat("0.000"));
+        StringBuilder formatString = new StringBuilder();
 
-        CellStyle percentStyle = workbook.createCellStyle();
-        percentStyle.setDataFormat(dataFormat.getFormat("0.00%"));
-
-        for (int i = 0; i < 11; i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) row = sheet.createRow(i);
-
-            Cell cellA = row.getCell(0);
-            if (cellA == null) continue;
-
-            String cellValue = cellA.getStringCellValue().trim().toLowerCase();
-
-            Cell cellC = row.createCell(2);
-            cellC.setCellValue(i + 1);
-
-            if ("fixed".equals(cellValue)) {
-                cellC.setCellStyle(fixedStyle);
-            } else if ("percent".equals(cellValue)) {
-                cellC.setCellStyle(percentStyle);
+        if (format instanceof Format.PercentFormat(var decimalPlaces)) {
+            formatString.append("0");
+            if (decimalPlaces > 0) {
+                formatString.append(".");
+                formatString.append("0".repeat(decimalPlaces));
+            }
+            formatString.append("%");
+        } else if (format instanceof Format.CurrencyFormat(
+                var decimalPlaces, var symbol
+        ) && symbol != null && !symbol.isEmpty()) {
+            formatString.append("\"").append(symbol).append("\"");
+            formatString.append("#,##0");
+            
+            if (decimalPlaces > 0) {
+                formatString.append(".");
+                formatString.append("0".repeat(decimalPlaces));
+            }
+        } else if (format instanceof Format.FixedFormat(var decimalPlaces)) {
+            formatString.append("0");
+            if (decimalPlaces > 0) {
+                formatString.append(".");
+                formatString.append("0".repeat(decimalPlaces));
             }
         }
 
-        fileIn.close();
-        FileOutputStream fileOut = new FileOutputStream(outputFile);
-        workbook.write(fileOut);
-        fileOut.close();
-        workbook.close();
+        cellStyle.setDataFormat(dataFormat.getFormat(formatString.toString()));
+        cell.setCellStyle(cellStyle);
+    }
 
-        log.info("Saved as: {}", outputFile.getAbsolutePath());
+    @lombok.SneakyThrows
+    static void printNonEmptyCellsWithFormat(File excelFile) {
+        try (FileInputStream fis = new FileInputStream(excelFile);
+             Workbook workbook = new XSSFWorkbook(fis)) {
 
-        // Open new file automatically
-        if (Desktop.isDesktopSupported()) {
-            Desktop.getDesktop().open(outputFile);
-        } else {
-            log.error("Desktop opening not supported.");
+            for (Sheet sheet : workbook) {
+                for (Row row : sheet) {
+                    for (Cell cell : row) {
+                        if (cell.getCellType() == CellType.BLANK) continue;
+
+                        // Cell address
+                        String address = cell.getAddress().formatAsString();
+
+                        // Raw cell value
+                        String value = getRawValue(cell);
+
+                        // Format string
+                        CellStyle style = cell.getCellStyle();
+                        short formatIndex = style.getDataFormat();
+                        String format = style != null ? style.getDataFormatString() : "(none)";
+
+                        System.out.printf("Cell %s: value = %s, format = %s, formatIndex =%s%n ", address, value, format, formatIndex);
+                    }
+                }
+            }
         }
     }
+
+    private static String getRawValue(Cell cell) {
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    return Double.toString(cell.getNumericCellValue());
+                }
+            case BOOLEAN:
+                return Boolean.toString(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            case ERROR:
+                return Byte.toString(cell.getErrorCellValue());
+            default:
+                return "(unknown)";
+        }
+    }
+
+
 }
 
