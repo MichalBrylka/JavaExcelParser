@@ -9,10 +9,6 @@ public sealed interface FormattableNumber permits FormattableNumber.Currency, Fo
         return new Fixed(value);
     }
 
-    static Currency ofCurrency(double value, String symbol) {
-        return new Currency(value, symbol);
-    }
-
     static Percentage ofPercentRaw(double value) {
         return new Percentage(value);
     }
@@ -21,6 +17,17 @@ public sealed interface FormattableNumber permits FormattableNumber.Currency, Fo
         return new Percentage(percent / 100.0);
     }
 
+    static Currency ofCurrency(double value, String symbol) {
+        return new Currency(value, symbol);
+    }
+
+    default FormattableNumber withRawNumber(double rawNumber) {
+        return switch (this) {
+            case Fixed ignored -> ofFixed(rawNumber);
+            case Percentage ignored -> ofPercentRaw(rawNumber);
+            case Currency(var ignored, String currencySymbol) -> ofCurrency(rawNumber, currencySymbol);
+        };
+    }
 
     record Fixed(double rawNumber) implements FormattableNumber {
         @Override
