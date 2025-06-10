@@ -6,7 +6,25 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
-public sealed abstract class CellAssertion<T extends CellAssertion<T>> permits NumberCellAssertion, StringCellAssertion /*FormulaCellAssertion, LocalDateTimeCellAssertion*/ {
+public sealed abstract class CellAssertion<T extends CellAssertion<T>> permits FormulaCellAssertion, NumberCellAssertion, StringCellAssertion {
+
+    public static NumberCellAssertion NumberCell(String cellAddress) {
+        return new NumberCellAssertion(cellAddress);
+    }
+
+    public static StringCellAssertion StringCell(String cellAddress) {
+        return new StringCellAssertion(cellAddress);
+    }
+
+    public static FormulaCellAssertion FormulaCell(String cellAddress) {
+        return new FormulaCellAssertion(cellAddress);
+    }
+
+    /*public static LocalDateTimeCellAssertion LocalDateTimeCell(String cellAddress) {
+        return new LocalDateTimeCellAssertion(cellAddress);
+    }    */
+
+
     protected final String cellAddress;
     private String expectedFormat;
 

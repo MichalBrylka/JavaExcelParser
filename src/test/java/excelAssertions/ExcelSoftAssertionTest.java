@@ -9,7 +9,7 @@ import java.io.*;
 import java.nio.file.Files;
 
 import static excelAssertions.ExcelAssert.assertThatExcel;
-import static excelAssertions.CellAssertions.*;
+import static excelAssertions.CellAssertion.*;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
@@ -46,6 +46,7 @@ class ExcelSoftAssertionTest {
                 .has(StringCell("A1").contains("quarterly"))
                 .has(NumberCell("B5").equalTo(150).withinPercentage(1).format("0.000"))
                 .has(NumberCell("B5").equalTo(150.75).withinOffset(0.01).format("0.000"))
+                .has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
                 .check();
 
     }
