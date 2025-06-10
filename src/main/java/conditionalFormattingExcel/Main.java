@@ -22,6 +22,12 @@ public class Main {
         NumberFormat numberFormat = new NumberFormat(4, 1, 2);
 
         writeFormattedCell(sheet, numberFormat, new CellAddress("A1"), FormattableNumber.ofCurrency(1234.56789, "$"));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("A2"), FormattableNumber.ofCurrency(11234.56789, "$"));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("A3"), FormattableNumber.ofCurrency(21234.56789, "$"));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("A4"), FormattableNumber.ofCurrency(31234.56789, "$"));
+        writeFormattedCell(sheet, numberFormat, new CellAddress("A5"), FormattableNumber.ofCurrency(41234.56789, "$"));
+
+
         writeFormattedCell(sheet, numberFormat, new CellAddress("B1"), FormattableNumber.ofPercentRaw(0.875));
         writeFormattedCell(sheet, numberFormat, new CellAddress("C1"), FormattableNumber.ofFixed(3.1415926));
         writeFormattedCell(sheet, numberFormat, new CellAddress("D1"), FormattableNumber.ofCurrency(1234.56789, "PLN"));
