@@ -44,10 +44,6 @@ public class ExcelAssertionBuilder {
         return new NumberCellAssertionBuilder(cellAddress);
     }
 
-    public CellAssertion<String, ?> withoutValue() {
-        return new EmptyCellAssertion(cellAddress);
-    }
-
     public static class NumberCellAssertionBuilder {
         private final String cellAddress;
 
@@ -83,4 +79,34 @@ public class ExcelAssertionBuilder {
             return new LessThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
         }
     }
+
+    public CellAssertion<String, ?> withoutValue() {
+        return new EmptyCellAssertion(cellAddress);
+    }
+
+    public BooleanCellAssertionBuilder withBoolean() {
+        return new BooleanCellAssertionBuilder(cellAddress);
+    }
+
+    public static class BooleanCellAssertionBuilder {
+        private final String cellAddress;
+
+        public BooleanCellAssertionBuilder(String cellAddress) {
+            this.cellAddress = cellAddress;
+        }
+
+        public CellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
+            return new BooleanCellAssertion(cellAddress, expectedValue);
+        }
+
+        public CellAssertion<Boolean, ?> isTrue() {
+            return new BooleanCellAssertion(cellAddress, true);
+        }
+
+        public CellAssertion<Boolean, ?> isFalse() {
+            return new BooleanCellAssertion(cellAddress, false);
+        }
+    }
+
+
 }

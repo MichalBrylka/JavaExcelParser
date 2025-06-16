@@ -4,8 +4,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
-public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits
-        EmptyCellAssertion, NumberCellAssertion {
+public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits BooleanCellAssertion, EmptyCellAssertion, NumberCellAssertion {
 
     protected final String cellAddress;
     private String expectedFormat;
