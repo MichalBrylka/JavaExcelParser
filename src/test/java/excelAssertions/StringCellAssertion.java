@@ -3,7 +3,7 @@ package excelAssertions;
 import org.apache.poi.ss.usermodel.*;
 import org.assertj.core.api.SoftAssertions;
 
-
+/*
 public final class StringCellAssertion extends CellAssertion<StringCellAssertion> {
     private String expectedValue;
     private String expectedContainsValue;
@@ -72,4 +72,4 @@ public final class StringCellAssertion extends CellAssertion<StringCellAssertion
             return false;
 
     }
-}
+}*/

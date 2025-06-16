@@ -6,7 +6,7 @@ import org.assertj.core.data.Offset;
 import org.jetbrains.annotations.NotNull;
 import org.apache.poi.ss.formula.eval.ErrorEval;
 
-public final class FormulaCellAssertion extends CellAssertion<FormulaCellAssertion> {
+/*public final class FormulaCellAssertion extends CellAssertion<FormulaCellAssertion> {
     private String expectedFormulaText;
     private Object expectedResult;
 
@@ -106,4 +106,4 @@ public final class FormulaCellAssertion extends CellAssertion<FormulaCellAsserti
             return true;
         } else return false;
     }
-}
+}*/

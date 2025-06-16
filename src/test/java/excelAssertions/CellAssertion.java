@@ -1,71 +1,65 @@
 package excelAssertions;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
-public sealed abstract class CellAssertion<T extends CellAssertion<T>> permits FormulaCellAssertion, NumberCellAssertion, StringCellAssertion {
-
-    public static NumberCellAssertion NumberCell(String cellAddress) {
-        return new NumberCellAssertion(cellAddress);
-    }
-
-    public static StringCellAssertion StringCell(String cellAddress) {
-        return new StringCellAssertion(cellAddress);
-    }
-
-    public static FormulaCellAssertion FormulaCell(String cellAddress) {
-        return new FormulaCellAssertion(cellAddress);
-    }
-
-    /*public static LocalDateTimeCellAssertion LocalDateTimeCell(String cellAddress) {
-        return new LocalDateTimeCellAssertion(cellAddress);
-    }    */
-
-
+public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits NumberCellAssertion {
     protected final String cellAddress;
     private String expectedFormat;
 
     protected CellAssertion(String cellAddress) {
-        if (cellAddress == null) throw new IllegalArgumentException("cellAddress cannot be null");
+        if (cellAddress == null || cellAddress.isBlank())
+            throw new IllegalArgumentException("cellAddress cannot be null nor blank");
         this.cellAddress = cellAddress;
     }
 
-    public T format(String expectedFormat) {
+    public TAssertion withFormat(String expectedFormat) {
         this.expectedFormat = expectedFormat;
         return self();
     }
 
+    @SuppressWarnings("unchecked")
+    protected TAssertion self() {
+        return (TAssertion) this;
+    }
+
+
     final void doAssert(Cell cell, SoftAssertions softly) {
-        boolean mainAssertionAdded = false;
         if (expectedFormat != null) {
-            var cellStyle = cell.getCellStyle();
-            softly.assertThat(cellStyle)
-                    .as("cellStyle for cell " + cellAddress + " does not exist")
-                    .isNotNull();
-            if (cellStyle != null) {
-                String actualFormat = cellStyle.getDataFormatString();
-                softly.assertThat(actualFormat)
-                        .isEqualTo(expectedFormat);
-            }
-            mainAssertionAdded = true;
+            softly.assertThat(cell.getCellStyle())
+                    .withFailMessage(() -> "cellStyle for cell " + cellAddress + " does not exist")
+                    .isNotNull()
+                    .extracting(CellStyle::getDataFormatString)
+                    .isEqualTo(expectedFormat);
         }
 
-        boolean additionalAssertionAdded = doAssertCore(cell, softly);
-
-        if (!mainAssertionAdded && !additionalAssertionAdded)
-            softly.fail("%s for %s does not add anything. What's the point of asserting?".formatted(this.getClass().getSimpleName(), cellAddress));
+        doAssertCore(cell, softly);
     }
 
-    protected abstract boolean doAssertCore(Cell cell, SoftAssertions softly);
+    protected void doAssertCore(Cell cell, SoftAssertions softly) {
+        CellType cellType = cell.getCellType();
+        if (isCellTypeSupported(cellType))
+            doAssertOnValue(fromCell(cell), softly);
+        else if (CellType.FORMULA != cellType) {
+            CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
+            CellType cellValueType = cellValue.getCellType();
 
-
-    @SuppressWarnings("unchecked")
-    protected T self() {
-        return (T) this;
+            if (isCellTypeSupported(cellValueType))
+                doAssertOnValue(fromCellValue(cellValue), softly);
+            else
+                softly.fail("%s for %s cannot add assertion for formula cell type %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellValueType, cell.getStringCellValue()));
+        } else
+            softly.fail("%s for %s cannot add assertion for cell type %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellType, cell.getStringCellValue()));
     }
+
+    protected abstract void doAssertOnValue(TValue value, SoftAssertions softly);
+
+    protected abstract boolean isCellTypeSupported(CellType cellType);
+
+    protected abstract TValue fromCell(Cell cell);
+
+    protected abstract TValue fromCellValue(CellValue cellValue);
 
     Cell getCell(Sheet sheet) {
         CellReference cellReference = new CellReference(cellAddress);

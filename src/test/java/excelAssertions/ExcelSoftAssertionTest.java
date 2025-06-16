@@ -8,9 +8,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.nio.file.Files;
 
-import static excelAssertions.ExcelAssert.assertThatExcel;
-import static excelAssertions.CellAssertion.*;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.assertj.core.data.Offset;
+import org.assertj.core.data.Percentage;
+
+import static excelAssertions.ExcelAssertionBuilder.*;
+import static org.assertj.core.api.Assertions.*;
 
 
 class ExcelSoftAssertionTest {
@@ -26,12 +28,14 @@ class ExcelSoftAssertionTest {
 
         // The test will execute all `has()` checks and report all failures at the end.
         assertThatThrownBy(() -> {
-            assertThatExcel(excelFile)
-                    //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
-                    .has(NumberCell("B5").equalTo(150.75).withinOffset(0.01))     // This will also fail
-                    //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
-                    .check();
+            try (var assertThatExcelFile = assertThatExcel(excelFile)) {
+                assertThatExcelFile
+                        //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
+                        .has(cellAt("B5").withNumber().isCloseTo(160.75, offset(0.01)))     // This will also fail
+                //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
+                ;
 
+            }
         })
                 .isInstanceOf(MultipleFailuresError.class)
                 .hasMessageContaining("Multiple Failures (2 failures)"); // AssertJ wraps multiple errors
@@ -41,14 +45,15 @@ class ExcelSoftAssertionTest {
     @lombok.SneakyThrows
     void testAllAssertionsPass() {
         File excelFile = generateQuarterlyReport();
-        assertThatExcel(excelFile)
-                .inSheet(0)
-                .has(StringCell("A1").contains("quarterly"))
-                .has(NumberCell("B5").equalTo(150).withinPercentage(1).format("0.000"))
-                .has(NumberCell("B5").equalTo(150.75).withinOffset(0.01).format("0.000"))
-                .has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
-                .check();
-
+        try (var assertThatExcelFile = assertThatExcel(excelFile)) {
+            assertThatExcelFile
+                    .inSheet(0)
+                    //.has(StringCell("A1").contains("quarterly"))
+                    .has(cellAt("B5").withNumber().isCloseTo(150.0, withinPercentage(1)).withFormat("0.000"))
+                    .has(cellAt("B5").withNumber().isCloseTo(150.75, offset(0.01)).withFormat("0.000"))
+            //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
+            ;
+        }
     }
 
     private static File generateQuarterlyReport() throws IOException {

@@ -5,76 +5,131 @@ import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 
-import org.assertj.core.api.Assertions;
+sealed abstract class NumberCellAssertion extends CellAssertion<Double, NumberCellAssertion> permits
+        CloseToOffsetNumberCellAssertion, CloseToPercentNumberCellAssertion, RelationNumberCellAssertion {
 
-public final class NumberCellAssertion extends CellAssertion<NumberCellAssertion> {
-    private Double expectedValue;
-    private Offset<Double> offset;
-    private Percentage percentage;
-
-
-    public NumberCellAssertion(String cellAddress) {
+    protected NumberCellAssertion(String cellAddress) {
         super(cellAddress);
     }
 
-    public NumberCellAssertion equalTo(double expectedValue) {
+    @Override
+    protected final boolean isCellTypeSupported(CellType cellType) {
+        return cellType == CellType.NUMERIC;
+    }
+
+    @Override
+    protected final Double fromCell(Cell cell) {
+        return cell.getNumericCellValue();
+    }
+
+    @Override
+    protected final Double fromCellValue(CellValue cellValue) {
+        return cellValue.getNumberValue();
+    }
+}
+
+final class CloseToPercentNumberCellAssertion extends NumberCellAssertion {
+    private final Double expectedValue;
+    private final Percentage percentage;
+
+    CloseToPercentNumberCellAssertion(String cellAddress, Double expectedValue, Percentage percentage) {
+        super(cellAddress);
         this.expectedValue = expectedValue;
-        return self();
-    }
-
-    public NumberCellAssertion withinOffset(double value) {
-        this.offset = Assertions.offset(value);
-        this.percentage = null;
-        return self();
-    }
-
-    public NumberCellAssertion withinPercentage(double value) {
-        this.offset = null;
-        this.percentage = Assertions.withinPercentage(value);
-        return self();
+        this.percentage = percentage;
     }
 
     @Override
-    public String toString() {
-        return
-                "expectedValue==" + expectedValue +
-                (
-                        offset != null || percentage != null
-                                ? (
-                                offset != null
-                                        ? " ±" + offset.value
-                                        : " ±" + percentage
-                        )
-                                : ""
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isCloseTo(expectedValue, percentage);
+    }
+}
 
-                );
+final class CloseToOffsetNumberCellAssertion extends NumberCellAssertion {
+    private final Double expectedValue;
+    private final Offset<Double> offset;
+
+    CloseToOffsetNumberCellAssertion(String cellAddress, Double expectedValue, Offset<Double> offset) {
+        super(cellAddress);
+        this.expectedValue = expectedValue;
+        this.offset = offset;
     }
 
     @Override
-    protected boolean doAssertCore(Cell cell, SoftAssertions softly) {
-        if (cell == null || cell.getCellType() != CellType.NUMERIC) {
-            softly.assertThat(cell)
-                    .as("Cell " + cellAddress + " is not a numeric cell.")
-                    .isNotNull()
-                    .extracting(Cell::getCellType)
-                    .isEqualTo(CellType.NUMERIC);
-            return true;
-        }
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isCloseTo(expectedValue, offset);
+    }
+}
 
-        double actualValue = cell.getNumericCellValue();
+sealed abstract class RelationNumberCellAssertion extends NumberCellAssertion permits
+        EqualToNumberCellAssertion,
+        GreaterThanNumberCellAssertion, GreaterThanOrEqualToNumberCellAssertion,
+        LessThanNumberCellAssertion, LessThanOrEqualToNumberCellAssertion {
 
-        if (expectedValue instanceof Double d) {
-            double expected = d;
+    protected final Double expectedValue;
 
-            if (offset == null && percentage != null)
-                softly.assertThat(actualValue).isCloseTo(expected, percentage);
-            else if (offset != null && percentage == null)
-                softly.assertThat(actualValue).isCloseTo(expected, offset);
-            else
-                softly.assertThat(actualValue).isEqualTo(expected);
+    protected RelationNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress);
+        this.expectedValue = expectedValue;
+    }
+}
 
-            return true;
-        } else
-            return false;
+
+final class EqualToNumberCellAssertion extends RelationNumberCellAssertion {
+
+    EqualToNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress, expectedValue);
+    }
+
+    @Override
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isEqualTo(expectedValue);
+    }
+}
+
+final class GreaterThanNumberCellAssertion extends RelationNumberCellAssertion {
+
+    GreaterThanNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress, expectedValue);
+    }
+
+    @Override
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isGreaterThan(expectedValue);
+    }
+}
+
+final class GreaterThanOrEqualToNumberCellAssertion extends RelationNumberCellAssertion {
+
+    GreaterThanOrEqualToNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress, expectedValue);
+    }
+
+    @Override
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isGreaterThanOrEqualTo(expectedValue);
+    }
+}
+
+final class LessThanNumberCellAssertion extends RelationNumberCellAssertion {
+
+    LessThanNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress, expectedValue);
+    }
+
+    @Override
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isLessThan(expectedValue);
+    }
+}
+
+final class LessThanOrEqualToNumberCellAssertion extends RelationNumberCellAssertion {
+
+    LessThanOrEqualToNumberCellAssertion(String cellAddress, Double expectedValue) {
+        super(cellAddress, expectedValue);
+    }
+
+    @Override
+    protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
+        softly.assertThat(actualValue).isLessThanOrEqualTo(expectedValue);
     }
 }
