@@ -33,7 +33,7 @@ public class ExcelAssert implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             workbook.close();
         } catch (IOException e) {

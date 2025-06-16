@@ -44,6 +44,10 @@ public class ExcelAssertionBuilder {
         return new NumberCellAssertionBuilder(cellAddress);
     }
 
+    public CellAssertion<String, ?> withoutValue() {
+        return new EmptyCellAssertion(cellAddress);
+    }
+
     public static class NumberCellAssertionBuilder {
         private final String cellAddress;
 

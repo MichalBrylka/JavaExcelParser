@@ -4,7 +4,9 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
-public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits NumberCellAssertion {
+public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits
+        EmptyCellAssertion, NumberCellAssertion {
+
     protected final String cellAddress;
     private String expectedFormat;
 
@@ -26,10 +28,15 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
 
 
     final void doAssert(Cell cell, SoftAssertions softly) {
+
         if (expectedFormat != null) {
-            softly.assertThat(cell.getCellStyle())
-                    .withFailMessage(() -> "cellStyle for cell " + cellAddress + " does not exist")
+            softly.assertThat(cell)
+                    .withFailMessage(() -> "cell for " + cellAddress + " cannot be null and it's cellStyle must exist for format assertion to work")
                     .isNotNull()
+
+                    .extracting(Cell::getCellStyle)
+                    .isNotNull()
+
                     .extracting(CellStyle::getDataFormatString)
                     .isEqualTo(expectedFormat);
         }
@@ -41,7 +48,7 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
         CellType cellType = cell.getCellType();
         if (isCellTypeSupported(cellType))
             doAssertOnValue(fromCell(cell), softly);
-        else if (CellType.FORMULA != cellType) {
+        else if (CellType.FORMULA == cellType) {
             CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
             CellType cellValueType = cellValue.getCellType();
 

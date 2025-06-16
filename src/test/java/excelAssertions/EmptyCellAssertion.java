@@ -1,20 +1,52 @@
 package excelAssertions;
 
-public class EmptyCellAssertion {
-    /*
-public boolean isCellEmpty(Cell cell) {
-    if (cell == null) {
-        return true;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.assertj.core.api.SoftAssertions;
+
+final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAssertion> {
+    EmptyCellAssertion(String cellAddress) {
+        super(cellAddress);
     }
 
-    if (cell.getCellType() == CellType.BLANK) {
-        return true;
+    @Override
+    protected void doAssertCore(Cell cell, SoftAssertions softly) {
+        if (cell == null ||
+            cell.getCellType() == CellType.BLANK ||
+            cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()
+        )
+            return;
+        else if (cell.getCellType() == CellType.FORMULA) {
+            CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
+
+            if (cellValue == null ||
+                cellValue.getCellType() == CellType.BLANK ||
+                cellValue.getCellType() == CellType.STRING && cellValue.getStringValue().trim().isEmpty()
+            )
+                return;
+        }
+
+        softly.fail("Cell %s expected to be empty but was not".formatted(cellAddress));
     }
 
-    if (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()) {
-        return true;
+    @Override
+    protected void doAssertOnValue(String s, SoftAssertions softly) {
+        //not used
     }
 
-    return false;
-}*/
+    @Override
+    protected boolean isCellTypeSupported(CellType cellType) {
+        return false;//not used
+    }
+
+    @Override
+    protected String fromCell(Cell cell) {
+        return null;//not used
+    }
+
+    @Override
+    protected String fromCellValue(CellValue cellValue) {
+        return null;//not used
+    }
 }
