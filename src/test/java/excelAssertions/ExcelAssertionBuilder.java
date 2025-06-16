@@ -108,5 +108,23 @@ public class ExcelAssertionBuilder {
         }
     }
 
+    public ErrorCellAssertionBuilder withErrorText() {
+        return new ErrorCellAssertionBuilder(cellAddress);
+    }
 
+    public static class ErrorCellAssertionBuilder {
+        private final String cellAddress;
+
+        public ErrorCellAssertionBuilder(String cellAddress) {
+            this.cellAddress = cellAddress;
+        }
+
+        public ErrorCellAssertion equalTo(String expectedText) {
+            return new ErrorTextEqualsCellAssertion(cellAddress, expectedText);
+        }
+
+        public ErrorCellAssertion contains(String containsText) {
+            return new ErrorTextContainsCellAssertion(cellAddress, containsText);
+        }
+    }
 }
