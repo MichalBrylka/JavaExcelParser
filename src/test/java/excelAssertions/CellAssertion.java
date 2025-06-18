@@ -4,10 +4,12 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = false)
 public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits BooleanCellAssertion, EmptyCellAssertion, ErrorCellAssertion, NumberCellAssertion {
 
     protected final String cellAddress;
-    private String expectedFormat;
+    protected String expectedFormat;
 
     protected CellAssertion(String cellAddress) {
         if (cellAddress == null || cellAddress.isBlank())

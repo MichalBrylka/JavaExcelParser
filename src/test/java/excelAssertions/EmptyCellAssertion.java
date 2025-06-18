@@ -5,6 +5,8 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.assertj.core.api.SoftAssertions;
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAssertion> {
     EmptyCellAssertion(String cellAddress) {
         super(cellAddress);

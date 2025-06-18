@@ -5,6 +5,8 @@ import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 sealed abstract class NumberCellAssertion extends CellAssertion<Double, NumberCellAssertion> permits
         CloseToOffsetNumberCellAssertion, CloseToPercentNumberCellAssertion, RelationNumberCellAssertion {
 
@@ -28,6 +30,8 @@ sealed abstract class NumberCellAssertion extends CellAssertion<Double, NumberCe
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class CloseToPercentNumberCellAssertion extends NumberCellAssertion {
     private final Double expectedValue;
     private final Percentage percentage;
@@ -44,6 +48,8 @@ final class CloseToPercentNumberCellAssertion extends NumberCellAssertion {
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class CloseToOffsetNumberCellAssertion extends NumberCellAssertion {
     private final Double expectedValue;
     private final Offset<Double> offset;
@@ -60,6 +66,8 @@ final class CloseToOffsetNumberCellAssertion extends NumberCellAssertion {
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 sealed abstract class RelationNumberCellAssertion extends NumberCellAssertion permits
         EqualToNumberCellAssertion,
         GreaterThanNumberCellAssertion, GreaterThanOrEqualToNumberCellAssertion,
@@ -73,7 +81,8 @@ sealed abstract class RelationNumberCellAssertion extends NumberCellAssertion pe
     }
 }
 
-
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class EqualToNumberCellAssertion extends RelationNumberCellAssertion {
 
     EqualToNumberCellAssertion(String cellAddress, Double expectedValue) {
@@ -86,6 +95,8 @@ final class EqualToNumberCellAssertion extends RelationNumberCellAssertion {
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class GreaterThanNumberCellAssertion extends RelationNumberCellAssertion {
 
     GreaterThanNumberCellAssertion(String cellAddress, Double expectedValue) {
@@ -98,6 +109,8 @@ final class GreaterThanNumberCellAssertion extends RelationNumberCellAssertion {
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class GreaterThanOrEqualToNumberCellAssertion extends RelationNumberCellAssertion {
 
     GreaterThanOrEqualToNumberCellAssertion(String cellAddress, Double expectedValue) {
@@ -110,6 +123,8 @@ final class GreaterThanOrEqualToNumberCellAssertion extends RelationNumberCellAs
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class LessThanNumberCellAssertion extends RelationNumberCellAssertion {
 
     LessThanNumberCellAssertion(String cellAddress, Double expectedValue) {
@@ -122,6 +137,8 @@ final class LessThanNumberCellAssertion extends RelationNumberCellAssertion {
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class LessThanOrEqualToNumberCellAssertion extends RelationNumberCellAssertion {
 
     LessThanOrEqualToNumberCellAssertion(String cellAddress, Double expectedValue) {

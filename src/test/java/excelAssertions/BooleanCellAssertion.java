@@ -3,6 +3,8 @@ package excelAssertions;
 import org.apache.poi.ss.usermodel.*;
 import org.assertj.core.api.SoftAssertions;
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class BooleanCellAssertion extends CellAssertion<Boolean, BooleanCellAssertion> {
     private final boolean expectedValue;
 

@@ -49,8 +49,10 @@ class ExcelSoftAssertionTest {
                     .has(cellAt("B5").withNumber().isCloseTo(150.0, withinPercentage(1)).withFormat("0.000"))
                     .has(cellAt("B5").withNumber().isCloseTo(150.75, offset(0.01)).withFormat("0.000"))
                     .has(cellAt("B6").withoutValue())
+                    .has(cellAt("B7").withErrorText().contains("ERROR").ignoreCase().ignoreNewLines())
             //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
             ;
+
         }
     }
 

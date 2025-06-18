@@ -3,6 +3,7 @@ package excelAssertions;
 import org.apache.poi.ss.usermodel.*;
 import org.assertj.core.api.SoftAssertions;
 
+@lombok.EqualsAndHashCode(callSuper = true)
 abstract sealed class ErrorCellAssertion extends CellAssertion<String, ErrorCellAssertion>
         permits ErrorTextContainsCellAssertion, ErrorTextEqualsCellAssertion {
     protected ErrorCellAssertion(String cellAddress) {
@@ -25,16 +26,16 @@ abstract sealed class ErrorCellAssertion extends CellAssertion<String, ErrorCell
     }
 
 
-    protected boolean ignoreCase = false;
-    protected boolean ignoreNewLines = false;
+    protected boolean isIgnoreCase = false;
+    protected boolean isIgnoreNewLines = false;
 
     public ErrorCellAssertion ignoreCase() {
-        this.ignoreCase = true;
+        this.isIgnoreCase = true;
         return self();
     }
 
     public ErrorCellAssertion ignoreNewLines() {
-        this.ignoreNewLines = true;
+        this.isIgnoreNewLines = true;
         return self();
     }
 
@@ -45,6 +46,8 @@ abstract sealed class ErrorCellAssertion extends CellAssertion<String, ErrorCell
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class ErrorTextEqualsCellAssertion extends ErrorCellAssertion {
     private final String expectedText;
 
@@ -55,16 +58,18 @@ final class ErrorTextEqualsCellAssertion extends ErrorCellAssertion {
 
     @Override
     protected void doAssertOnValue(final String actualValue, SoftAssertions softly) {
-        String actual = ignoreNewLines ? normalizeNewLines(actualValue) : actualValue;
-        String expected = ignoreNewLines ? normalizeNewLines(expectedText) : expectedText;
+        String actual = isIgnoreNewLines ? normalizeNewLines(actualValue) : actualValue;
+        String expected = isIgnoreNewLines ? normalizeNewLines(expectedText) : expectedText;
 
-        if (ignoreCase)
+        if (isIgnoreCase)
             softly.assertThat(actual).isEqualToIgnoringCase(expected);
         else
             softly.assertThat(actual).isEqualTo(expected);
     }
 }
 
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 final class ErrorTextContainsCellAssertion extends ErrorCellAssertion {
     private final String containsText;
 
@@ -75,10 +80,10 @@ final class ErrorTextContainsCellAssertion extends ErrorCellAssertion {
 
     @Override
     protected void doAssertOnValue(final String actualValue, SoftAssertions softly) {
-        String actual = ignoreNewLines ? normalizeNewLines(actualValue) : actualValue;
-        String expected = ignoreNewLines ? normalizeNewLines(containsText) : containsText;
+        String actual = isIgnoreNewLines ? normalizeNewLines(actualValue) : actualValue;
+        String expected = isIgnoreNewLines ? normalizeNewLines(containsText) : containsText;
 
-        if (ignoreCase)
+        if (isIgnoreCase)
             softly.assertThat(actual).containsIgnoringCase(expected);
         else
             softly.assertThat(actual).contains(expected);
