@@ -28,6 +28,10 @@ sealed abstract class NumberCellAssertion extends CellAssertion<Double, NumberCe
     protected final Double fromCellValue(CellValue cellValue) {
         return cellValue.getNumberValue();
     }
+
+    protected String getErrorDetails() {
+        return "number check at " + cellAddress;
+    }
 }
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
@@ -44,7 +48,9 @@ final class CloseToPercentNumberCellAssertion extends NumberCellAssertion {
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isCloseTo(expectedValue, percentage);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isCloseTo(expectedValue, percentage);
     }
 }
 
@@ -62,7 +68,9 @@ final class CloseToOffsetNumberCellAssertion extends NumberCellAssertion {
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isCloseTo(expectedValue, offset);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isCloseTo(expectedValue, offset);
     }
 }
 
@@ -91,7 +99,9 @@ final class EqualToNumberCellAssertion extends RelationNumberCellAssertion {
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isEqualTo(expectedValue);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isEqualTo(expectedValue);
     }
 }
 
@@ -105,7 +115,9 @@ final class GreaterThanNumberCellAssertion extends RelationNumberCellAssertion {
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isGreaterThan(expectedValue);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isGreaterThan(expectedValue);
     }
 }
 
@@ -119,7 +131,9 @@ final class GreaterThanOrEqualToNumberCellAssertion extends RelationNumberCellAs
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isGreaterThanOrEqualTo(expectedValue);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isGreaterThanOrEqualTo(expectedValue);
     }
 }
 
@@ -133,7 +147,9 @@ final class LessThanNumberCellAssertion extends RelationNumberCellAssertion {
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isLessThan(expectedValue);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isLessThan(expectedValue);
     }
 }
 
@@ -147,6 +163,8 @@ final class LessThanOrEqualToNumberCellAssertion extends RelationNumberCellAsser
 
     @Override
     protected void doAssertOnValue(Double actualValue, SoftAssertions softly) {
-        softly.assertThat(actualValue).isLessThanOrEqualTo(expectedValue);
+        softly.assertThat(actualValue)
+                .as(this::getErrorDetails)
+                .isLessThanOrEqualTo(expectedValue);
     }
 }

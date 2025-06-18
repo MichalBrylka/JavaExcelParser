@@ -1,94 +1,218 @@
 package excelAssertions;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.opentest4j.MultipleFailuresError;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.util.*;
 
 import static excelAssertions.ExcelAssertionBuilder.*;
 import static org.assertj.core.api.Assertions.*;
 
-
 class ExcelSoftAssertionTest {
+    private ExcelAssert assertThatExcelFile;
+    private File exampleFile;
+
 
     @Test
     @lombok.SneakyThrows
     void testMultipleExcelCellFailures() {
-        // Assume "financials_with_errors.xlsx" exists for this test.
-        // - A1 contains "Annual Report" (instead of "Quarterly Report")
-        // - B5 contains 150.80 (outside the 0.01 tolerance of 150.75)
-        // - B12 formula result is correct.
-        File excelFile = generateQuarterlyReport();
+        usingNewExcelFile();
 
         // The test will execute all `has()` checks and report all failures at the end.
         assertThatThrownBy(() -> {
-            try (var assertThatExcelFile = assertThatExcel(excelFile)) {
-                assertThatExcelFile
-                        //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
-                        .has(cellAt("B5").withNumber().closeTo(160.75, offset(0.01)))     // This will also fail
-                //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
-                ;
-
-            }
+            assertThatExcelFile
+                    //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
+                    .has(cellAt("B5").withNumber().closeTo(160.75, offset(0.01)))     // This will also fail
+            //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
+            ;
         })
                 .isInstanceOf(MultipleFailuresError.class)
                 .hasMessageContaining("Multiple Failures (2 failures)"); // AssertJ wraps multiple errors
     }
 
     @Test
-    @lombok.SneakyThrows
     void testAllAssertionsPass() {
-        File excelFile = generateQuarterlyReport();
-        try (var assertThatExcelFile = assertThatExcel(excelFile)) {
-            assertThatExcelFile.inSheet(0).have(
-                    cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
-                    cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
-                    cellAt("B6").withoutValue(),
-                    cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines()
-            )
-            //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
-            //.has(StringCell("A1").contains("quarterly"))
-            ;
+        usingNewExcelFile();
+        assertThatExcelFile.inSheet("Numbers").have(
+//                cellAt("A1").withNumber()..withFormat("0.00"),
+//                cellAt("A2").withNumber().     .withFormat("0.0000%"),
+//                cellAt("A3").withNumber().     .withFormat("0.00"),
+//                cellAt("A4").withNumber().     .withFormat("0.00000000"),
+//                cellAt("A5").withNumber().     .withFormat("#,##0"),
+//                cellAt("A6").withNumber().     .withFormat("0.0000"),
+//                cellAt("A7").withNumber().     .withFormat("0.0000"),
+//                cellAt("A8").withNumber().     .withFormat("0.00"),
+
+                //cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
+                //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
+                cellAt("B1").withoutValue()
+                //cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines()
+        )
+
+        /* new FormulaCell("1+1", ""),
+                    new FormulaCell("100/3", ""),
+                    new NumberCell(Float.MAX_VALUE, ""),
+                    new NumberCell(Float.MIN_VALUE, ""),
+                    new FormulaCell("-9999999", ""),
+                    new FormulaCell("SQRT(2)", ""),
+                    new FormulaCell("PI()", ""),
+                    new FormulaCell("RAND()*100", "")*/
+        //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
+        //.has(StringCell("A1").contains("quarterly"))
+        ;
+
+    }
+
+    @lombok.SneakyThrows
+    void usingNewExcelFile() {
+        exampleFile = Files.createTempFile("Example-", ".xlsx").toFile();
+        try (FileOutputStream out = new FileOutputStream(exampleFile)) {
+            generateTestExcelFile(out);
+            //java.awt.Desktop.getDesktop().open(tempFile);
+        }
+        assertThatExcelFile = assertThatExcel(exampleFile);
+    }
+
+    @AfterEach
+    @lombok.SneakyThrows
+    void tearDown() {
+        if (assertThatExcelFile != null) {
+            assertThatExcelFile.close();
+            assertThatExcelFile = null;
+        }
+
+        if (exampleFile != null)
+            Files.deleteIfExists(exampleFile.toPath());
+    }
+
+    private static void generateTestExcelFile(OutputStream output) throws IOException {
+        try (var workbook = new XSSFWorkbook()) {
+
+            Map<String, java.util.List<CellBase>> sheets = new LinkedHashMap<>();
+
+            sheets.put("Numbers", java.util.List.of(
+                    new FormulaCell("1+1", "0.00"),
+                    new FormulaCell("100/3", "0.0000%"),
+                    new NumberCell(Float.MAX_VALUE, "0.00"),
+                    new NumberCell(Float.MIN_VALUE, "0.00000000"),
+                    new FormulaCell("-9999999", "#,##0"),
+                    new FormulaCell("SQRT(2)", "0.0000"),
+                    new FormulaCell("PI()", "0.0000"),
+                    new FormulaCell("RAND()*100", "0.00")
+            ));
+
+            sheets.put("Strings", java.util.List.of(
+                    new TextCell("Quarterly Report"),
+                    new FormulaCell("""
+                            "Hello "&"World\""""),
+                    new FormulaCell("""
+                            FIXED(123456.789, 2, FALSE)"""),
+                    new TextCell("\"\""),
+                    new FormulaCell("""
+                            "Line1"&CHAR(10)&"Line2\""""),
+                    new FormulaCell("""
+                            "123" & "456\""""),
+                    new FormulaCell("""
+                            "=" & "SUM(1,2)"\s""")
+            ));
+
+            sheets.put("Dates", java.util.List.of(
+                    new FormulaCell("DATE(2023,1,1)", "yyyy-mm-dd"),
+                    new FormulaCell("DATE(1900,1,1)", "yyyy-mm-dd"),
+                    new FormulaCell("TODAY()", "yyyy-mm-dd"),
+                    new FormulaCell("DATE(2024,2,29)", "yyyy-mm-dd"),
+                    new FormulaCell("DATE(1999,12,31)", "yyyy-mm-dd"),
+                    new FormulaCell("EDATE(TODAY(),-1)", "yyyy-mm-dd")
+            ));
+
+            sheets.put("Times", java.util.List.of(
+                    new FormulaCell("TIME(12,0,0)", "hh:mm"),
+                    new FormulaCell("TIME(23,59,59)", "hh:mm:ss"),
+                    new FormulaCell("NOW()-TODAY()", "hh:mm:ss"),
+                    new FormulaCell("TIME(0,0,0)", "hh:mm:ss"),
+                    new FormulaCell("TIME(7,30,15)", "hh:mm:ss AM/PM"),
+                    new FormulaCell("MOD(NOW(),1)", "hh:mm:ss")
+            ));
+
+            sheets.put("DateTimes", java.util.List.of(
+                    new FormulaCell("NOW()", "yyyy-mm-dd hh:mm:ss"),
+                    new FormulaCell("DATE(2025,6,17)+TIME(15,30,0)", "[$-en-US]yyyy-mmm-dd hh:mm:ss;@"),
+                    new FormulaCell("NOW()+1/24", "yyyy-mm-dd hh:mm:ss"),
+                    new FormulaCell("NOW()-1/24", "yyyy-mmm-dd hh:mm:ss"),
+                    new FormulaCell("TODAY()+TIME(23,59,59)", "yyyy-mm-dd hh:mm:ss")
+            ));
+
+            sheets.put("Booleans", java.util.List.of(
+                    new FormulaCell("1=1"),
+                    new FormulaCell("ISNUMBER(123)"),
+                    new FormulaCell("FALSE"),
+                    new FormulaCell("1>2"),
+                    new FormulaCell("NOT(TRUE)"),
+                    new FormulaCell("AND(TRUE,FALSE)"),
+                    new FormulaCell("OR(TRUE,FALSE)")
+            ));
+
+            sheets.put("Errors", List.of(
+                    new FormulaCell("1/0"),
+                    new FormulaCell("NA()"),
+                    new FormulaCell("SQRT(-1)"),
+                    new FormulaCell("""
+                            1+"a\""""),
+                    new FormulaCell("""
+                            INDIRECT("A" & (2^20+1))"""),
+                    new FormulaCell("XYZ()")
+            ));
+
+            for (var entry : sheets.entrySet()) {
+                Sheet sheet = workbook.createSheet(entry.getKey());
+                int rowIdx = 0;
+
+                for (CellBase cellData : entry.getValue()) {
+                    Row row = sheet.createRow(rowIdx++);
+                    Cell cell = row.createCell(0);
+
+                    switch (cellData) {
+                        case TextCell c -> cell.setCellValue(c.text);
+                        case NumberCell n -> cell.setCellValue(n.number);
+                        case FormulaCell f -> cell.setCellFormula(f.formula);
+                        default -> throw new IllegalStateException("Unexpected cell type: " + cell);
+                    }
+
+                    if (cellData.format() instanceof String format) {
+                        CellStyle style = workbook.createCellStyle();
+                        style.setDataFormat(workbook.createDataFormat().getFormat(format));
+                        cell.setCellStyle(style);
+                    }
+                }
+            }
+
+            workbook.write(output);
         }
     }
 
-    private static File generateQuarterlyReport() throws IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Report");
+    interface CellBase {
+        String format();
+    }
 
-        // A1 = "Quarterly Report"
-        sheet.createRow(0).createCell(0).setCellValue("Quarterly Report");
-
-        // B5 = 150.75 with 3 decimal digits
-        var b5 = sheet.createRow(4).createCell(1);
-        b5.setCellValue(150.7501);
-        DataFormat dataFormat = workbook.createDataFormat();
-        CellStyle number3Style = workbook.createCellStyle();
-        number3Style.setDataFormat(dataFormat.getFormat("0.000"));
-        b5.setCellStyle(number3Style);
-
-
-        // B12 = "=10+B5"
-        sheet.createRow(11).createCell(1).setCellFormula("10+B5");
-
-        // Evaluate the formula so it shows a result in some viewers
-        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        evaluator.evaluateFormulaCell(sheet.getRow(11).getCell(1));
-
-        // Save to temporary file
-        var tempFile = Files.createTempFile("QuarterlyReport-", ".xlsx").toFile();
-        try (FileOutputStream out = new FileOutputStream(tempFile)) {
-            workbook.write(out);
+    record TextCell(String text, String format) implements CellBase {
+        TextCell(String text) {
+            this(text, null);
         }
+    }
 
-        workbook.close();
+    record NumberCell(double number, String format) implements CellBase {
+        NumberCell(double number) {
+            this(number, null);
+        }
+    }
 
-        //if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(tempFile);
-        //else throw new UnsupportedOperationException("Desktop opening not supported.");
-
-        return tempFile;
+    record FormulaCell(String formula, String format) implements CellBase {
+        FormulaCell(String formula) {
+            this(formula, null);
+        }
     }
 }

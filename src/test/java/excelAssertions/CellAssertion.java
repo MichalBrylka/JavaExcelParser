@@ -37,38 +37,38 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
     final void doAssert(Cell cell, SoftAssertions softly) {
 
         if (expectedFormat != null) {
-            softly.assertThat(cell)
-                    .withFailMessage(() -> "cell for " + cellAddress + " cannot be null and it's cellStyle must exist for format assertion to work")
-                    .isNotNull()
-
-                    .extracting(Cell::getCellStyle)
-                    .isNotNull()
-
-                    .extracting(CellStyle::getDataFormatString)
+            softly.assertThat(getCellFormat(cell))
+                    .as(() -> "expected format at " + cellAddress)
                     .isEqualTo(expectedFormat);
         }
         if (expectedFormatCategory != null) {
             var actual = detectFormatCategory(cell);
-            softly.assertThat(actual).isEqualTo(expectedFormatCategory);
+            softly.assertThat(actual)
+                    .as(() -> "expected format category at " + cellAddress)
+                    .isEqualTo(expectedFormatCategory);
         }
 
         doAssertCore(cell, softly);
     }
 
     protected void doAssertCore(Cell cell, SoftAssertions softly) {
-        CellType cellType = cell.getCellType();
-        if (isCellTypeSupported(cellType))
-            doAssertOnValue(fromCell(cell), softly);
-        else if (CellType.FORMULA == cellType) {
-            CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
-            CellType cellValueType = cellValue.getCellType();
+        if (cell != null) {
+            CellType cellType = cell.getCellType();
+            if (isCellTypeSupported(cellType)) {
+                doAssertOnValue(fromCell(cell), softly);
+                return;
+            } else if (CellType.FORMULA == cellType) {
+                CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
+                CellType cellValueType = cellValue.getCellType();
 
-            if (isCellTypeSupported(cellValueType))
-                doAssertOnValue(fromCellValue(cellValue), softly);
-            else
-                softly.fail("%s for %s cannot add assertion for formula cell type %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellValueType, cell.getStringCellValue()));
-        } else
-            softly.fail("%s for %s cannot add assertion for cell type %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellType, cell.getStringCellValue()));
+                if (isCellTypeSupported(cellValueType))
+                    doAssertOnValue(fromCellValue(cellValue), softly);
+                else
+                    softly.fail("%s: cannot add assertion for formula cell @%s %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellValueType, cell.getStringCellValue()));
+                return;
+            }
+        }
+        softly.fail("%s: cannot add assertion for cell @%s:'%s'".formatted(this.getClass().getSimpleName(), cellAddress, cell == null ? "<EMPTY>" : cell.getStringCellValue()));
     }
 
     protected abstract void doAssertOnValue(TValue value, SoftAssertions softly);
@@ -79,16 +79,24 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
 
     protected abstract TValue fromCellValue(CellValue cellValue);
 
-    protected static FormatCategory detectFormatCategory(Cell cell) {
-        if (cell != null && cell.getCellStyle() instanceof CellStyle style && style.getDataFormatString() instanceof String format) {
+    private static String getCellFormat(Cell cell) {
+        return cell != null && cell.getCellStyle() instanceof CellStyle style && style.getDataFormatString() instanceof String format
+                ? format
+                : null;
+    }
+
+    private static FormatCategory detectFormatCategory(Cell cell) {
+        if (getCellFormat(cell) instanceof String format) {
             format = format.toLowerCase(java.util.Locale.ROOT);
 
             if (format.equals("general")) return FormatCategory.GENERAL;
             if (format.contains("%")) return FormatCategory.PERCENTAGE;
-            if (format.contains("_($") || format.contains("accounting")) return FormatCategory.ACCOUNTING;
-            if (DateUtil.isADateFormat(style.getDataFormat(), format)) return FormatCategory.DATE;
+            if (DateUtil.isADateFormat(cell.getCellStyle().getDataFormat(), format)) return FormatCategory.DATE;
             if (format.contains("h") || format.contains("s") || format.contains("am/pm")) return FormatCategory.TIME;
             if (format.contains("#,##0") || format.contains("currency")) return FormatCategory.CURRENCY;
+            if (format.contains("_($") || format.contains("accounting")) return FormatCategory.ACCOUNTING;
+            if (format.contains("e+")) return FormatCategory.SCIENTIFIC;
+            if (format.contains("?/")) return FormatCategory.FRACTION;
             if (format.contains("@")) return FormatCategory.TEXT;
         }
         return FormatCategory.OTHER;

@@ -62,9 +62,13 @@ final class ErrorTextEqualsCellAssertion extends ErrorCellAssertion {
         String expected = isIgnoreNewLines ? normalizeNewLines(expectedText) : expectedText;
 
         if (isIgnoreCase)
-            softly.assertThat(actual).isEqualToIgnoringCase(expected);
+            softly.assertThat(actual)
+                    .as(() -> "error text equality check at " + cellAddress)
+                    .isEqualToIgnoringCase(expected);
         else
-            softly.assertThat(actual).isEqualTo(expected);
+            softly.assertThat(actual)
+                    .as(() -> "error text equality check at " + cellAddress)
+                    .isEqualTo(expected);
     }
 }
 
@@ -84,8 +88,12 @@ final class ErrorTextContainsCellAssertion extends ErrorCellAssertion {
         String expected = isIgnoreNewLines ? normalizeNewLines(containsText) : containsText;
 
         if (isIgnoreCase)
-            softly.assertThat(actual).containsIgnoringCase(expected);
+            softly.assertThat(actual)
+                    .as(() -> "error text contains check at " + cellAddress)
+                    .containsIgnoringCase(expected);
         else
-            softly.assertThat(actual).contains(expected);
+            softly.assertThat(actual)
+                    .as(() -> "error text contains check at " + cellAddress)
+                    .contains(expected);
     }
 }
