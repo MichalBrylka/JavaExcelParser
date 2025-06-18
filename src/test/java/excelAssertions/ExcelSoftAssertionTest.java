@@ -28,7 +28,7 @@ class ExcelSoftAssertionTest {
             try (var assertThatExcelFile = assertThatExcel(excelFile)) {
                 assertThatExcelFile
                         //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
-                        .has(cellAt("B5").withNumber().isCloseTo(160.75, offset(0.01)))     // This will also fail
+                        .has(cellAt("B5").withNumber().closeTo(160.75, offset(0.01)))     // This will also fail
                 //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
                 ;
 
@@ -46,10 +46,10 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile
                     .inSheet(0)
                     //.has(StringCell("A1").contains("quarterly"))
-                    .has(cellAt("B5").withNumber().isCloseTo(150.0, withinPercentage(1)).withFormat("0.000"))
-                    .has(cellAt("B5").withNumber().isCloseTo(150.75, offset(0.01)).withFormat("0.000"))
+                    .has(cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"))
+                    .has(cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"))
                     .has(cellAt("B6").withoutValue())
-                    .has(cellAt("B7").withErrorText().contains("ERROR").ignoreCase().ignoreNewLines())
+                    .has(cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines())
             //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
             ;
 

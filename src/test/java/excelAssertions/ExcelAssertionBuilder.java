@@ -51,11 +51,11 @@ public class ExcelAssertionBuilder {
             this.cellAddress = cellAddress;
         }
 
-        public CellAssertion<Double, ?> isCloseTo(Double expectedValue, Percentage percentage) {
+        public CellAssertion<Double, ?> closeTo(Double expectedValue, Percentage percentage) {
             return new CloseToPercentNumberCellAssertion(cellAddress, expectedValue, percentage);
         }
 
-        public CellAssertion<Double, ?> isCloseTo(Double expectedValue, Offset<Double> offset) {
+        public CellAssertion<Double, ?> closeTo(Double expectedValue, Offset<Double> offset) {
             return new CloseToOffsetNumberCellAssertion(cellAddress, expectedValue, offset);
         }
 
@@ -123,7 +123,7 @@ public class ExcelAssertionBuilder {
             return new ErrorTextEqualsCellAssertion(cellAddress, expectedText);
         }
 
-        public ErrorCellAssertion contains(String containsText) {
+        public ErrorCellAssertion containing(String containsText) {
             return new ErrorTextContainsCellAssertion(cellAddress, containsText);
         }
     }
