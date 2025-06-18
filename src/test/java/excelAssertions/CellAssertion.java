@@ -10,6 +10,7 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
 
     protected final String cellAddress;
     protected String expectedFormat;
+    protected FormatCategory expectedFormatCategory;
 
     protected CellAssertion(String cellAddress) {
         if (cellAddress == null || cellAddress.isBlank())
@@ -19,6 +20,11 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
 
     public TAssertion withFormat(String expectedFormat) {
         this.expectedFormat = expectedFormat;
+        return self();
+    }
+
+    public TAssertion withFormatCategory(FormatCategory expectedFormatCategory) {
+        this.expectedFormatCategory = expectedFormatCategory;
         return self();
     }
 
@@ -40,6 +46,10 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
 
                     .extracting(CellStyle::getDataFormatString)
                     .isEqualTo(expectedFormat);
+        }
+        if (expectedFormatCategory != null) {
+            var actual = detectFormatCategory(cell);
+            softly.assertThat(actual).isEqualTo(expectedFormatCategory);
         }
 
         doAssertCore(cell, softly);
@@ -68,6 +78,21 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
     protected abstract TValue fromCell(Cell cell);
 
     protected abstract TValue fromCellValue(CellValue cellValue);
+
+    protected static FormatCategory detectFormatCategory(Cell cell) {
+        if (cell != null && cell.getCellStyle() instanceof CellStyle style && style.getDataFormatString() instanceof String format) {
+            format = format.toLowerCase(java.util.Locale.ROOT);
+
+            if (format.equals("general")) return FormatCategory.GENERAL;
+            if (format.contains("%")) return FormatCategory.PERCENTAGE;
+            if (format.contains("_($") || format.contains("accounting")) return FormatCategory.ACCOUNTING;
+            if (DateUtil.isADateFormat(style.getDataFormat(), format)) return FormatCategory.DATE;
+            if (format.contains("h") || format.contains("s") || format.contains("am/pm")) return FormatCategory.TIME;
+            if (format.contains("#,##0") || format.contains("currency")) return FormatCategory.CURRENCY;
+            if (format.contains("@")) return FormatCategory.TEXT;
+        }
+        return FormatCategory.OTHER;
+    }
 
     Cell getCell(Sheet sheet) {
         CellReference cellReference = new CellReference(cellAddress);
