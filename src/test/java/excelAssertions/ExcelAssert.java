@@ -32,6 +32,12 @@ public class ExcelAssert implements AutoCloseable {
         return this;
     }
 
+    public ExcelAssert have(CellAssertion<?, ?>... cellAssertions) {
+        for (var ca : cellAssertions)
+            ca.doAssert(ca.getCell(sheet), softly);
+        return this;
+    }
+
     @Override
     public void close() {
         try {

@@ -43,16 +43,15 @@ class ExcelSoftAssertionTest {
     void testAllAssertionsPass() {
         File excelFile = generateQuarterlyReport();
         try (var assertThatExcelFile = assertThatExcel(excelFile)) {
-            assertThatExcelFile
-                    .inSheet(0)
-                    //.has(StringCell("A1").contains("quarterly"))
-                    .has(cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"))
-                    .has(cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"))
-                    .has(cellAt("B6").withoutValue())
-                    .has(cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines())
+            assertThatExcelFile.inSheet(0).have(
+                    cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
+                    cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
+                    cellAt("B6").withoutValue(),
+                    cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines()
+            )
             //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
+            //.has(StringCell("A1").contains("quarterly"))
             ;
-
         }
     }
 
