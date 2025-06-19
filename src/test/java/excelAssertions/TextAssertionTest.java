@@ -1,6 +1,10 @@
 package excelAssertions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.AbstractStringAssert;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -133,4 +137,90 @@ public class TextAssertionTest {
                 Arguments.of(null, ".*", false, false, false) // null doesn't match any pattern
         );
     }
+
+    static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static Stream<Arguments> serializationCases() {
+        return Stream.of(
+                Arguments.of(new EqualsTextAssertion("test", false, false), """
+                        {"eq":"test"}"""),
+                Arguments.of(new EqualsTextAssertion("A=B", true, true), """
+                        {"eq":"A=B","ignoreNewLines":true,"ignoreCase":true}"""),
+                Arguments.of(new ContainsTextAssertion("hello", false), """
+                        {"in":"hello"}"""),
+                Arguments.of(new ContainsTextAssertion("world", true), """
+                        {"in":"world","ignoreCase":true}"""),
+                Arguments.of(new PatternTextAssertion("a.*b", false, false), """
+                        {"like":"a.*b"}"""),
+                Arguments.of(new PatternTextAssertion("abc", true, true), """
+                        {"like":"abc","singleLineMode":true,"ignoreCase":true}""")
+        );
+    }
+
+    @ParameterizedTest(name = "should serialize {0} into {1}")
+    @MethodSource("serializationCases")
+    void shouldSerializeTextAssertions(TextAssertion<?> assertion, String expectedJson) throws JsonProcessingException {
+        String actualJson = objectMapper.writeValueAsString(assertion);
+        assertThat(actualJson).isEqualTo(expectedJson);
+    }
+
+    static Stream<Arguments> deserializationCases() {
+        return Stream.of(
+                Arguments.of("""
+                                {"eq":"test"}""",
+                        new EqualsTextAssertion("test", false, false)),
+                Arguments.of("""
+                                {"==":"abc","ignoreCase":true,"ignoreNewLines":true}""",
+                        new EqualsTextAssertion("abc", true, true)),
+                Arguments.of("""
+                                {"in":"hello"}""",
+                        new ContainsTextAssertion("hello", false)),
+                Arguments.of("""
+                                {"∋":"world","ignoreCase":true}""",
+                        new ContainsTextAssertion("world", true)),
+                Arguments.of("""
+                                {"like":"a.*b"}""",
+                        new PatternTextAssertion("a.*b", false, false)),
+                Arguments.of("""
+                                {"like":"abc","ignoreCase":true,"singleLineMode":true}""",
+                        new PatternTextAssertion("abc", true, true))
+        );
+    }
+
+    @ParameterizedTest(name = "should deserialize {1} from {0}")
+    @MethodSource("deserializationCases")
+    void shouldDeserializeTextAssertions(String json, TextAssertion<?> expected) throws JsonProcessingException {
+        TextAssertion<?> result = objectMapper.readValue(json, TextAssertion.class);
+        assertThat(result)
+                .usingRecursiveComparison()
+                .isEqualTo(expected);
+    }
+
+    static Stream<Arguments> invalidJsonCases() {
+        return Stream.of(
+                Arguments.of(Named.of("no operation key", """
+                        {"ignoreCase":true}"""), "Exactly one operation key must be present"),
+
+                Arguments.of(Named.of("multiple operations", """
+                        {"eq":"test", "==":"test"}"""), "Exactly one operation key must be present"),
+
+                Arguments.of(Named.of("unknown field present", """
+                        {"eq":"test", "extra":true}"""), "Unknown field: extra"),
+
+                Arguments.of(Named.of("null expected value", """
+                        {"eq":null}"""), "The value for 'eq' must not be null"),
+
+                Arguments.of(Named.of("unknown operation alias", """
+                        {"equals":"abc"}"""), "Unknown field: equals")
+        );
+    }
+
+    @ParameterizedTest(name = "should reject invalid JSON: {0}")
+    @MethodSource("invalidJsonCases")
+    void shouldRejectInvalidJson(String namedJson, String expectedMessageFragment) {
+        assertThatThrownBy(() -> objectMapper.readValue(namedJson, TextAssertion.class))
+                .isInstanceOf(JsonMappingException.class)
+                .hasMessageContaining(expectedMessageFragment);
+    }
+
 }
