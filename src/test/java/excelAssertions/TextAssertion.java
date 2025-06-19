@@ -1,6 +1,7 @@
 package excelAssertions;
 
 import org.assertj.core.api.AbstractStringAssert;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 import java.util.regex.Pattern;
@@ -77,8 +78,11 @@ final class EqualsTextAssertion extends TextAssertion<EqualsTextAssertion> {
 final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
     final String expectedSubstring;
 
-    public ContainsTextAssertion(String expectedSubstring, boolean ignoreCase) {
+    @SuppressWarnings("ConstantValue")
+    public ContainsTextAssertion(@NotNull String expectedSubstring, boolean ignoreCase) {
         super(ignoreCase);
+        if (expectedSubstring == null)
+            throw new IllegalArgumentException("expectedSubstring cannot be null");
         this.expectedSubstring = expectedSubstring;
     }
 
@@ -90,12 +94,26 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
 }
 
 final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
-    final String regex;
-    final boolean singleLineMode;
+    final String pattern;
+    boolean singleLineMode;
 
-    public PatternTextAssertion(String regex, boolean ignoreCase, boolean singleLineMode) {
+    public PatternTextAssertion singleLineMode() {
+        this.singleLineMode = true;
+        return this;
+    }
+
+    public PatternTextAssertion multiLineMode() {
+        this.singleLineMode = false;
+        return this;
+    }
+
+    @SuppressWarnings("ConstantValue")
+    public PatternTextAssertion(@NotNull String pattern, boolean ignoreCase, boolean singleLineMode) {
         super(ignoreCase);
-        this.regex = regex;
+        if (pattern == null)
+            throw new IllegalArgumentException("pattern cannot be null");
+
+        this.pattern = pattern;
         this.singleLineMode = singleLineMode;
     }
 
@@ -105,7 +123,7 @@ final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
         if (this.ignoreCase) flags |= Pattern.CASE_INSENSITIVE;
         if (this.singleLineMode) flags |= Pattern.DOTALL;
 
-        Pattern pattern = Pattern.compile(regex, flags);
+        Pattern pattern = Pattern.compile(this.pattern, flags);
         assertion.matches(pattern);
     }
 }
