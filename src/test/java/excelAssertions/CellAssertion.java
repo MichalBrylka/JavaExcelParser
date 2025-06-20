@@ -6,11 +6,10 @@ import org.assertj.core.api.SoftAssertions;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = false)
-public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits
-        BooleanCellAssertion, EmptyCellAssertion, ErrorTextCellAssertion, NumberCellAssertion, StringCellAssertion {
+public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits BooleanCellAssertion, EmptyCellAssertion, ErrorTextCellAssertion, FormulaTextCellAssertion, NumberCellAssertion, TextCellAssertion {
 
     protected final String cellAddress;
-    protected String expectedFormat;
+    protected TextAssertion<?> expectedFormat;
     protected FormatCategory expectedFormatCategory;
 
     protected CellAssertion(String cellAddress) {
@@ -19,8 +18,13 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
         this.cellAddress = cellAddress;
     }
 
-    public TAssertion withFormat(String expectedFormat) {
+    public TAssertion withFormat(TextAssertion<?> expectedFormat) {
         this.expectedFormat = expectedFormat;
+        return self();
+    }
+
+    public TAssertion withFormat(String expectedFormat) {
+        this.expectedFormat = new EqualsTextAssertion(expectedFormat, false, false);
         return self();
     }
 
@@ -38,9 +42,9 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
     final void doAssert(Cell cell, SoftAssertions softly) {
 
         if (expectedFormat != null) {
-            softly.assertThat(getCellFormat(cell))
-                    .as(() -> "expected format at " + cellAddress)
-                    .isEqualTo(expectedFormat);
+            var softAssert = softly.assertThat(getCellFormat(cell))
+                    .as(() -> "cell format at %s to %s".formatted(cellAddress, expectedFormat.getFilterDescription()));
+            expectedFormat.apply(softAssert);
         }
         if (expectedFormatCategory != null) {
             var actual = detectFormatCategory(cell);

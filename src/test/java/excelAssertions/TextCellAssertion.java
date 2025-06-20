@@ -6,10 +6,10 @@ import org.jetbrains.annotations.NotNull;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = true)
-public final class StringCellAssertion extends CellAssertion<String, StringCellAssertion> {
+public final class TextCellAssertion extends CellAssertion<String, TextCellAssertion> {
     private final @NotNull TextAssertion<?> assertion;
 
-    public StringCellAssertion(String cellAddress, @NotNull TextAssertion<?> assertion) {
+    public TextCellAssertion(String cellAddress, @NotNull TextAssertion<?> assertion) {
         super(cellAddress);
         this.assertion = assertion;
     }
@@ -17,7 +17,7 @@ public final class StringCellAssertion extends CellAssertion<String, StringCellA
     @Override
     protected void assertOnValue(String actualValue, SoftAssertions softly) {
         var softAssert = softly.assertThat(actualValue)
-                .as(() -> "text %s check at %s".formatted(assertion.getFilterName(), cellAddress));
+                .as(() -> "text at %s to %s".formatted(cellAddress, assertion.getFilterDescription()));
         assertion.apply(softAssert);
     }
 

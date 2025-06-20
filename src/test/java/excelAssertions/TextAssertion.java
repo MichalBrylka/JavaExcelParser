@@ -29,7 +29,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
         return self();
     }
 
-    public abstract String getFilterName();
+    public abstract String getFilterDescription();
 
     @SuppressWarnings("unchecked")
     protected TAssertion self() {
@@ -40,10 +40,10 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
 
     private static final String IGNORE_CASE = "ignoreCase";
     private static final String IGNORE_NEW_LINES = "ignoreNewLines";
-    private static final String SINGLE_LINE_MODE = "singleLineMode";
+    private static final String DOTALL = "dotall";
 
     private static final Set<String> ALL_OPERATION_KEYS = Set.of("eq", "=", "==", "has", "∋", "like");
-    private static final Set<String> ALL_OPTION_KEYS = Set.of(IGNORE_CASE, IGNORE_NEW_LINES, SINGLE_LINE_MODE);
+    private static final Set<String> ALL_OPTION_KEYS = Set.of(IGNORE_CASE, IGNORE_NEW_LINES, DOTALL);
     private static final Set<String> ALL_ALLOWED_KEYS;
 
     static {
@@ -72,7 +72,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
 
                 case PatternTextAssertion pta -> {
                     gen.writeStringField("like", pta.pattern);
-                    if (pta.singleLineMode) gen.writeBooleanField(SINGLE_LINE_MODE, true);
+                    if (pta.dotallMode) gen.writeBooleanField(DOTALL, true);
                 }
                 default -> throw new JsonMappingException(gen, "Unknown TextAssertion subtype: " + value.getClass());
             }
@@ -110,7 +110,8 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
             // Read boolean options with default `false`
             boolean ignoreCase = node.path(IGNORE_CASE).asBoolean(false);
             boolean ignoreNewLines = node.path(IGNORE_NEW_LINES).asBoolean(false);
-            boolean singleLineMode = node.path(SINGLE_LINE_MODE).asBoolean(false);
+            boolean dotallMode = node.path(DOTALL).asBoolean(false);
+
 
             // Deserialize based on operation
             String op = presentOps.getFirst();
@@ -128,7 +129,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
                 }
                 case "like" -> {
                     String pattern = argumentNode.asText();
-                    yield new PatternTextAssertion(pattern, ignoreCase, singleLineMode);
+                    yield new PatternTextAssertion(pattern, ignoreCase, dotallMode);
                 }
                 default -> throw new JsonMappingException(p, "Unhandled operation key: " + op);
             };
@@ -157,8 +158,8 @@ final class EqualsTextAssertion extends TextAssertion<EqualsTextAssertion> {
     }
 
     @Override
-    public String getFilterName() {
-        return "equality";
+    public String getFilterDescription() {
+        return "equal '%s' %s, %s".formatted(expected, ignoreCase ? "ignoring case" : "case sensitive", ignoreNewLines ? "ignoring new lines" : "respecting new lines");
     }
 
     @Override
@@ -197,8 +198,8 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
     }
 
     @Override
-    public String getFilterName() {
-        return "contains";
+    public String getFilterDescription() {
+        return "contain '%s' %s".formatted(expectedSubstring, ignoreCase ? "ignoring case" : "case sensitive");
     }
 
     @Override
@@ -210,38 +211,51 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
 
 final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
     final String pattern;
-    boolean singleLineMode;
+    boolean dotallMode;
 
-    public PatternTextAssertion singleLineMode() {
-        this.singleLineMode = true;
+    /**
+     * Enables dotall mode.
+     *
+     * <p> In dotall mode, the expression {@code .} matches any character,
+     * including a line terminator.  By default, this expression does not match
+     * line terminators.
+     *
+     * <p> Dotall mode can also be enabled via the embedded flag
+     * expression&nbsp;{@code (?s)}.  (The {@code s} is a mnemonic for
+     * "single-line" mode, which is what this is called in Perl.)  </p>
+     */
+    public PatternTextAssertion dotallMode() {
+        this.dotallMode = true;
         return this;
     }
 
-    public PatternTextAssertion multiLineMode() {
-        this.singleLineMode = false;
+    public PatternTextAssertion noDotallMode() {
+        this.dotallMode = false;
         return this;
     }
 
     @SuppressWarnings("ConstantValue")
-    public PatternTextAssertion(@NotNull String pattern, boolean ignoreCase, boolean singleLineMode) {
+    public PatternTextAssertion(@NotNull String pattern, boolean ignoreCase, boolean dotallMode) {
         super(ignoreCase);
         if (pattern == null)
             throw new IllegalArgumentException("pattern cannot be null");
 
         this.pattern = pattern;
-        this.singleLineMode = singleLineMode;
+        this.dotallMode = dotallMode;
     }
 
     @Override
-    public String getFilterName() {
-        return "pattern match";
+    public String getFilterDescription() {
+        return "match '%s' %s, %s".formatted(pattern, ignoreCase ? "ignoring case" : "case sensitive", dotallMode ? "dotallMode" : "no dotallMode(default)");
     }
 
     @Override
     protected void apply(AbstractStringAssert<?> assertion) {
         int flags = 0;
         if (this.ignoreCase) flags |= Pattern.CASE_INSENSITIVE;
-        if (this.singleLineMode) flags |= Pattern.DOTALL;
+        if (this.dotallMode) flags |= Pattern.DOTALL;
+
+        //flags |= Pattern.COMMENTS;
 
         Pattern pattern = Pattern.compile(this.pattern, flags);
         assertion.matches(pattern);

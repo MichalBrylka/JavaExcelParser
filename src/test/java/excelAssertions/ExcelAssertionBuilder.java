@@ -121,8 +121,16 @@ public class ExcelAssertionBuilder {
             }
         }
 
-        public StringCellAssertion withText(TextAssertion<?> textAssertion) {
-            return new StringCellAssertion(cellAddress, textAssertion);
+        public TextCellAssertion withText(TextAssertion<?> textAssertion) {
+            return new TextCellAssertion(cellAddress, textAssertion);
+        }
+
+        public TextCellAssertion withText(String expectedText) {
+            return new TextCellAssertion(cellAddress, new EqualsTextAssertion(expectedText, false, false));
+        }
+
+        public FormulaTextCellAssertion withFormulaText(TextAssertion<?> textAssertion) {
+            return new FormulaTextCellAssertion(cellAddress, textAssertion);
         }
 
         public ErrorTextCellAssertion withErrorText(TextAssertion<?> textAssertion) {

@@ -153,7 +153,7 @@ public class TextAssertionTest {
                 Arguments.of(new PatternTextAssertion("a.*b", false, false), """
                         {"like":"a.*b"}"""),
                 Arguments.of(new PatternTextAssertion("abc", true, true), """
-                        {"like":"abc","singleLineMode":true,"ignoreCase":true}""")
+                        {"like":"abc","dotall":true,"ignoreCase":true}""")
         );
     }
 
@@ -182,7 +182,7 @@ public class TextAssertionTest {
                                 {"like":"a.*b"}""",
                         new PatternTextAssertion("a.*b", false, false)),
                 Arguments.of("""
-                                {"like":"abc","ignoreCase":true,"singleLineMode":true}""",
+                                {"like":"abc","ignoreCase":true,"dotall":true}""",
                         new PatternTextAssertion("abc", true, true))
         );
     }

@@ -5,7 +5,7 @@ import org.assertj.core.api.SoftAssertions;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = true)
-final class BooleanCellAssertion extends CellAssertion<Boolean, BooleanCellAssertion> {
+public final class BooleanCellAssertion extends CellAssertion<Boolean, BooleanCellAssertion> {
     private final boolean expectedValue;
 
     public BooleanCellAssertion(String cellAddress, boolean expectedValue) {

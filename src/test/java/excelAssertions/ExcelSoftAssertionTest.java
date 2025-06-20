@@ -25,9 +25,7 @@ class ExcelSoftAssertionTest {
         // The test will execute all `has()` checks and report all failures at the end.
         assertThatThrownBy(() -> {
             assertThatExcelFile
-                    //.has(StringCell("A1").equalsIgnoreCase("Quarterly Report")) // This will fail
                     .has(cellAt("B5").withNumber().closeTo(160.75, offset(0.01)))     // This will also fail
-            //.has(FormulaCell("B12").withResult(12500.50))           // This will pass
             ;
         })
                 .isInstanceOf(MultipleFailuresError.class)
@@ -53,18 +51,39 @@ class ExcelSoftAssertionTest {
                         cellAt("B1").withoutValue()
                 )
 
+                //formats
+                .inSheet("Numbers").have(
+                        cellAt("A1").withNumber().greaterThanOrEqualTo(0.0).withFormat("0.00"),
+                        cellAt("A2").withNumber().greaterThanOrEqualTo(0.0).withFormat(equalTo("0.0000%")),
+                        cellAt("A4").withNumber().greaterThanOrEqualTo(0.0).withFormat(containing("00000000")),
+                        cellAt("A5").withNumber().lessThan(0.0).withFormat(matching(".*##\\d"))
+                )
+
+                //formulas
+                .inSheet("Strings").have(
+                        cellAt("A2").withFormulaText(containing("&\"World\"").caseSensitive()),
+                        cellAt("A3").withFormulaText(equalTo("""
+                                TEXT(123456,"##0° 00' 00''")""").ignoreCase()),
+                        cellAt("A5").withFormulaText(containing("char").ignoreCase()),
+                        cellAt("A6").withFormulaText(matching(".*[1-3]{3}.*").dotallMode())
+
+
+                )
+
+                //texts
                 .inSheet("Strings").have(
                         cellAt("A1").withText(containing("report").ignoreCase()),
                         cellAt("A2").withText(equalTo("Hello World").caseSensitive()),
                         cellAt("A3").withText(equalTo("123456")),
                         cellAt("A4").withText(equalTo("\"\"")),
                         cellAt("A5").withText(equalTo("Line1\n\nline2").ignoreCase().ignoreNewLines()),
-                        cellAt("A5").withText(matching("Line1.*line2").ignoreCase().singleLineMode()),
+                        cellAt("A5").withText(matching("Line1.*line2").ignoreCase().dotallMode()),
                         cellAt("A6").withText(matching("^[1-6]{6}$")),
                         cellAt("A7").withText(matching("""
                                 ^=sUm\\(\\d+,\\d+\\)$""").ignoreCase())
                 )
 
+                //errors
                 .inSheet("Errors").have(
                         cellAt("A1").withErrorText(containing("div/0").ignoreCase()),
                         cellAt("A2").withErrorText(equalTo("#N/A").caseSensitive()),
@@ -72,7 +91,6 @@ class ExcelSoftAssertionTest {
                         cellAt("A4").withErrorText(matching("^#VaL\\w[a-z]!$").ignoreCase())
                 )
         ;
-
     }
 
     @lombok.SneakyThrows
@@ -93,8 +111,8 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile = null;
         }
 
-        /*if (exampleFile != null)
-            Files.deleteIfExists(exampleFile.toPath());*/
+        if (exampleFile != null)
+            Files.deleteIfExists(exampleFile.toPath());
     }
 
     private static void generateTestExcelFile(OutputStream output) throws IOException {
