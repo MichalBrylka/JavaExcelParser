@@ -29,102 +29,100 @@ public class ExcelAssertionBuilder {
         }
     }
 
-
-    private final String cellAddress;
-
-    private ExcelAssertionBuilder(String cellAddress) {
-        this.cellAddress = cellAddress;
+    public static ExcelCellAssertionBuilder cellAt(String cellAddress) {
+        return new ExcelCellAssertionBuilder(cellAddress);
     }
 
-    public static ExcelAssertionBuilder cellAt(String cellAddress) {
-        return new ExcelAssertionBuilder(cellAddress);
+    public static EqualsTextAssertion equalTo(String expectedText) {
+        return new EqualsTextAssertion(expectedText, false, false);
     }
 
-    public NumberCellAssertionBuilder withNumber() {
-        return new NumberCellAssertionBuilder(cellAddress);
+    public static ContainsTextAssertion containing(String containsText) {
+        return new ContainsTextAssertion(containsText, false);
     }
 
-    public static class NumberCellAssertionBuilder {
+    public static PatternTextAssertion matching(String pattern) {
+        return new PatternTextAssertion(pattern, false, false);
+    }
+
+
+    public static class ExcelCellAssertionBuilder {
         private final String cellAddress;
 
-        public NumberCellAssertionBuilder(String cellAddress) {
+        private ExcelCellAssertionBuilder(String cellAddress) {
             this.cellAddress = cellAddress;
         }
 
-        public CellAssertion<Double, ?> closeTo(Double expectedValue, Percentage percentage) {
-            return new CloseToPercentNumberCellAssertion(cellAddress, expectedValue, percentage);
+        public NumberCellAssertionBuilder withNumber() {
+            return new NumberCellAssertionBuilder(cellAddress);
         }
 
-        public CellAssertion<Double, ?> closeTo(Double expectedValue, Offset<Double> offset) {
-            return new CloseToOffsetNumberCellAssertion(cellAddress, expectedValue, offset);
+        public static class NumberCellAssertionBuilder {
+            private final String cellAddress;
+
+            public NumberCellAssertionBuilder(String cellAddress) {
+                this.cellAddress = cellAddress;
+            }
+
+            public CellAssertion<Double, ?> closeTo(Double expectedValue, Percentage percentage) {
+                return new CloseToPercentNumberCellAssertion(cellAddress, expectedValue, percentage);
+            }
+
+            public CellAssertion<Double, ?> closeTo(Double expectedValue, Offset<Double> offset) {
+                return new CloseToOffsetNumberCellAssertion(cellAddress, expectedValue, offset);
+            }
+
+            public CellAssertion<Double, ?> equalTo(Double expectedValue) {
+                return new EqualToNumberCellAssertion(cellAddress, expectedValue);
+            }
+
+            public CellAssertion<Double, ?> greaterThan(Double expectedValue) {
+                return new GreaterThanNumberCellAssertion(cellAddress, expectedValue);
+            }
+
+            public CellAssertion<Double, ?> greaterThanOrEqualTo(Double expectedValue) {
+                return new GreaterThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
+            }
+
+            public CellAssertion<Double, ?> lessThan(Double expectedValue) {
+                return new LessThanNumberCellAssertion(cellAddress, expectedValue);
+            }
+
+            public CellAssertion<Double, ?> lessThanOrEqualTo(Double expectedValue) {
+                return new LessThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
+            }
         }
 
-        public CellAssertion<Double, ?> equalTo(Double expectedValue) {
-            return new EqualToNumberCellAssertion(cellAddress, expectedValue);
+        public EmptyCellAssertion withoutValue() {
+            return new EmptyCellAssertion(cellAddress);
         }
 
-        public CellAssertion<Double, ?> greaterThan(Double expectedValue) {
-            return new GreaterThanNumberCellAssertion(cellAddress, expectedValue);
+        public BooleanCellAssertionBuilder withBoolean() {
+            return new BooleanCellAssertionBuilder(cellAddress);
         }
 
-        public CellAssertion<Double, ?> greaterThanOrEqualTo(Double expectedValue) {
-            return new GreaterThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
+        public static class BooleanCellAssertionBuilder {
+            private final String cellAddress;
+
+            public BooleanCellAssertionBuilder(String cellAddress) {
+                this.cellAddress = cellAddress;
+            }
+
+            public CellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
+                return new BooleanCellAssertion(cellAddress, expectedValue);
+            }
+
+            public CellAssertion<Boolean, ?> isTrue() {
+                return new BooleanCellAssertion(cellAddress, true);
+            }
+
+            public CellAssertion<Boolean, ?> isFalse() {
+                return new BooleanCellAssertion(cellAddress, false);
+            }
         }
 
-        public CellAssertion<Double, ?> lessThan(Double expectedValue) {
-            return new LessThanNumberCellAssertion(cellAddress, expectedValue);
-        }
-
-        public CellAssertion<Double, ?> lessThanOrEqualTo(Double expectedValue) {
-            return new LessThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
-        }
-    }
-
-    public CellAssertion<String, ?> withoutValue() {
-        return new EmptyCellAssertion(cellAddress);
-    }
-
-    public BooleanCellAssertionBuilder withBoolean() {
-        return new BooleanCellAssertionBuilder(cellAddress);
-    }
-
-    public static class BooleanCellAssertionBuilder {
-        private final String cellAddress;
-
-        public BooleanCellAssertionBuilder(String cellAddress) {
-            this.cellAddress = cellAddress;
-        }
-
-        public CellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
-            return new BooleanCellAssertion(cellAddress, expectedValue);
-        }
-
-        public CellAssertion<Boolean, ?> isTrue() {
-            return new BooleanCellAssertion(cellAddress, true);
-        }
-
-        public CellAssertion<Boolean, ?> isFalse() {
-            return new BooleanCellAssertion(cellAddress, false);
-        }
-    }
-
-    public ErrorCellAssertionBuilder withErrorText() {
-        return new ErrorCellAssertionBuilder(cellAddress);
-    }
-
-    public static class ErrorCellAssertionBuilder {
-        private final String cellAddress;
-
-        public ErrorCellAssertionBuilder(String cellAddress) {
-            this.cellAddress = cellAddress;
-        }
-
-        public ErrorCellAssertion equalTo(String expectedText) {
-            return new ErrorTextEqualsCellAssertion(cellAddress, expectedText);
-        }
-
-        public ErrorCellAssertion containing(String containsText) {
-            return new ErrorTextContainsCellAssertion(cellAddress, containsText);
+        public ErrorTextCellAssertion withErrorText(TextAssertion<?> textAssertion) {
+            return new ErrorTextCellAssertion(cellAddress, textAssertion);
         }
     }
 }

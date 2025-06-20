@@ -34,7 +34,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
         return (TAssertion) this;
     }
 
-    protected abstract void assertOnValue(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion);
+    protected abstract void apply(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion);
 
     private static final String IGNORE_CASE = "ignoreCase";
     private static final String IGNORE_NEW_LINES = "ignoreNewLines";
@@ -155,7 +155,7 @@ final class EqualsTextAssertion extends TextAssertion<EqualsTextAssertion> {
     }
 
     @Override
-    protected void assertOnValue(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
+    protected void apply(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
         if (this.ignoreNewLines) {
             Comparator<String> baseComparator = (s1, s2) ->
                     normalizeNewLines(s1, this.ignoreCase).compareTo(
@@ -190,7 +190,7 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
     }
 
     @Override
-    protected void assertOnValue(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
+    protected void apply(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
         if (this.ignoreCase) assertion.containsIgnoringCase(this.expectedSubstring);
         else assertion.contains(this.expectedSubstring);
     }
@@ -221,7 +221,7 @@ final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
     }
 
     @Override
-    protected void assertOnValue(AbstractStringAssert<?> assertion) {
+    protected void apply(AbstractStringAssert<?> assertion) {
         int flags = 0;
         if (this.ignoreCase) flags |= Pattern.CASE_INSENSITIVE;
         if (this.singleLineMode) flags |= Pattern.DOTALL;

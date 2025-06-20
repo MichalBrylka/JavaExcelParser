@@ -37,7 +37,8 @@ class ExcelSoftAssertionTest {
     @Test
     void testAllAssertionsPass() {
         usingNewExcelFile();
-        assertThatExcelFile.inSheet("Numbers").have(
+        assertThatExcelFile
+                .inSheet("Numbers").have(
 //                cellAt("A1").withNumber()..withFormat("0.00"),
 //                cellAt("A2").withNumber().     .withFormat("0.0000%"),
 //                cellAt("A3").withNumber().     .withFormat("0.00"),
@@ -47,22 +48,16 @@ class ExcelSoftAssertionTest {
 //                cellAt("A7").withNumber().     .withFormat("0.0000"),
 //                cellAt("A8").withNumber().     .withFormat("0.00"),
 
-                //cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
-                //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
-                cellAt("B1").withoutValue()
-                //cellAt("B7").withErrorText().containing("ERROR").ignoreCase().ignoreNewLines()
-        )
-
-        /* new FormulaCell("1+1", ""),
-                    new FormulaCell("100/3", ""),
-                    new NumberCell(Float.MAX_VALUE, ""),
-                    new NumberCell(Float.MIN_VALUE, ""),
-                    new FormulaCell("-9999999", ""),
-                    new FormulaCell("SQRT(2)", ""),
-                    new FormulaCell("PI()", ""),
-                    new FormulaCell("RAND()*100", "")*/
-        //.has(FormulaCell("B12").withFormulaText("10+B5").withResult(160.75))
-        //.has(StringCell("A1").contains("quarterly"))
+                        //cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
+                        //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
+                        cellAt("B1").withoutValue()
+                )
+                .inSheet("Errors").have(
+                        cellAt("A1").withErrorText(containing("div/0").ignoreCase()),
+                        cellAt("A2").withErrorText(equalTo("#N/A").caseSensitive()),
+                        cellAt("A3").withErrorText(equalTo("#NUM!\n").ignoreNewLines()),
+                        cellAt("A4").withErrorText(matching("^#VaL\\w[a-z]!$").ignoreCase())
+                )
         ;
 
     }

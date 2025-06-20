@@ -21,10 +21,10 @@ public class TextAssertionTest {
         AbstractStringAssert<?> stringAssert = assertThat(actualValue);
 
         if (expectSuccess)
-            assertThatNoException().isThrownBy(() -> assertion.assertOnValue(stringAssert));
+            assertThatNoException().isThrownBy(() -> assertion.apply(stringAssert));
         else
             assertThatExceptionOfType(AssertionError.class)
-                    .isThrownBy(() -> assertion.assertOnValue(stringAssert));
+                    .isThrownBy(() -> assertion.apply(stringAssert));
     }
 
     private static Stream<Arguments> equalsTextAssertionTestCases() {
@@ -78,10 +78,10 @@ public class TextAssertionTest {
         AbstractStringAssert<?> stringAssert = assertThat(actualValue);
 
         if (expectSuccess)
-            assertThatNoException().isThrownBy(() -> assertion.assertOnValue(stringAssert));
+            assertThatNoException().isThrownBy(() -> assertion.apply(stringAssert));
         else
             assertThatExceptionOfType(AssertionError.class)
-                    .isThrownBy(() -> assertion.assertOnValue(stringAssert));
+                    .isThrownBy(() -> assertion.apply(stringAssert));
     }
 
     private static Stream<Arguments> containsTextAssertionTestCases() {
@@ -111,10 +111,10 @@ public class TextAssertionTest {
         AbstractStringAssert<?> stringAssert = assertThat(actualValue);
 
         if (expectSuccess)
-            assertThatNoException().isThrownBy(() -> assertion.assertOnValue(stringAssert));
+            assertThatNoException().isThrownBy(() -> assertion.apply(stringAssert));
         else
             assertThatExceptionOfType(AssertionError.class)
-                    .isThrownBy(() -> assertion.assertOnValue(stringAssert));
+                    .isThrownBy(() -> assertion.apply(stringAssert));
     }
 
     private static Stream<Arguments> patternTextAssertionTestCases() {
