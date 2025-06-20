@@ -40,7 +40,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
     private static final String IGNORE_NEW_LINES = "ignoreNewLines";
     private static final String SINGLE_LINE_MODE = "singleLineMode";
 
-    private static final Set<String> ALL_OPERATION_KEYS = Set.of("eq", "=", "==", "in", "∋", "like");
+    private static final Set<String> ALL_OPERATION_KEYS = Set.of("eq", "=", "==", "has", "∋", "like");
     private static final Set<String> ALL_OPTION_KEYS = Set.of(IGNORE_CASE, IGNORE_NEW_LINES, SINGLE_LINE_MODE);
     private static final Set<String> ALL_ALLOWED_KEYS;
 
@@ -66,7 +66,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
                     if (eta.ignoreNewLines) gen.writeBooleanField(IGNORE_NEW_LINES, true);
                 }
 
-                case ContainsTextAssertion cta -> gen.writeStringField("in", cta.expectedSubstring);
+                case ContainsTextAssertion cta -> gen.writeStringField("has", cta.expectedSubstring);
 
                 case PatternTextAssertion pta -> {
                     gen.writeStringField("like", pta.pattern);
@@ -120,7 +120,7 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
                     String expected = argumentNode.asText();
                     yield new EqualsTextAssertion(expected, ignoreCase, ignoreNewLines);
                 }
-                case "in", "∋" -> {
+                case "has", "∋" -> {
                     String substring = argumentNode.asText();
                     yield new ContainsTextAssertion(substring, ignoreCase);
                 }

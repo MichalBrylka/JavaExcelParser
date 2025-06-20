@@ -147,9 +147,9 @@ public class TextAssertionTest {
                 Arguments.of(new EqualsTextAssertion("A=B", true, true), """
                         {"eq":"A=B","ignoreNewLines":true,"ignoreCase":true}"""),
                 Arguments.of(new ContainsTextAssertion("hello", false), """
-                        {"in":"hello"}"""),
+                        {"has":"hello"}"""),
                 Arguments.of(new ContainsTextAssertion("world", true), """
-                        {"in":"world","ignoreCase":true}"""),
+                        {"has":"world","ignoreCase":true}"""),
                 Arguments.of(new PatternTextAssertion("a.*b", false, false), """
                         {"like":"a.*b"}"""),
                 Arguments.of(new PatternTextAssertion("abc", true, true), """
@@ -173,7 +173,7 @@ public class TextAssertionTest {
                                 {"==":"abc","ignoreCase":true,"ignoreNewLines":true}""",
                         new EqualsTextAssertion("abc", true, true)),
                 Arguments.of("""
-                                {"in":"hello"}""",
+                                {"has":"hello"}""",
                         new ContainsTextAssertion("hello", false)),
                 Arguments.of("""
                                 {"∋":"world","ignoreCase":true}""",
