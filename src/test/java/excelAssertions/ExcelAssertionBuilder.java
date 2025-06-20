@@ -121,6 +121,10 @@ public class ExcelAssertionBuilder {
             }
         }
 
+        public StringCellAssertion withText(TextAssertion<?> textAssertion) {
+            return new StringCellAssertion(cellAddress, textAssertion);
+        }
+
         public ErrorTextCellAssertion withErrorText(TextAssertion<?> textAssertion) {
             return new ErrorTextCellAssertion(cellAddress, textAssertion);
         }

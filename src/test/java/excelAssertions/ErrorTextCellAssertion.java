@@ -1,14 +1,11 @@
 package excelAssertions;
 
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import org.apache.poi.ss.usermodel.*;
 import org.assertj.core.api.SoftAssertions;
 import org.jetbrains.annotations.NotNull;
 
-@Getter(AccessLevel.PACKAGE)
-@EqualsAndHashCode(callSuper = true)
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
 public final class ErrorTextCellAssertion extends CellAssertion<String, ErrorTextCellAssertion> {
     private final @NotNull TextAssertion<?> assertion;
 
@@ -18,15 +15,9 @@ public final class ErrorTextCellAssertion extends CellAssertion<String, ErrorTex
     }
 
     @Override
-    protected void doAssertOnValue(String actualValue, SoftAssertions softly) {
-        String operation = switch (assertion) {
-            case ContainsTextAssertion ignored -> "contains";
-            case EqualsTextAssertion ignored -> "equality";
-            case PatternTextAssertion ignored -> "pattern match";
-        };
-
+    protected void assertOnValue(String actualValue, SoftAssertions softly) {
         var softAssert = softly.assertThat(actualValue)
-                .as(() -> "error text %s check at %s".formatted(operation, cellAddress));
+                .as(() -> "error text %s check at %s".formatted(assertion.getFilterName(), cellAddress));
         assertion.apply(softAssert);
     }
 

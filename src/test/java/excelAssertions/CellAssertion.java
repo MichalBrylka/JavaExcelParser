@@ -6,7 +6,8 @@ import org.assertj.core.api.SoftAssertions;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = false)
-public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits BooleanCellAssertion, EmptyCellAssertion, ErrorTextCellAssertion, NumberCellAssertion {
+public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssertion<TValue, TAssertion>> permits
+        BooleanCellAssertion, EmptyCellAssertion, ErrorTextCellAssertion, NumberCellAssertion, StringCellAssertion {
 
     protected final String cellAddress;
     protected String expectedFormat;
@@ -55,14 +56,14 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
         if (cell != null) {
             CellType cellType = cell.getCellType();
             if (isCellTypeSupported(cellType)) {
-                doAssertOnValue(fromCell(cell), softly);
+                assertOnValue(fromCell(cell), softly);
                 return;
             } else if (CellType.FORMULA == cellType) {
                 CellValue cellValue = cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator().evaluate(cell);
                 CellType cellValueType = cellValue.getCellType();
 
                 if (isCellTypeSupported(cellValueType))
-                    doAssertOnValue(fromCellValue(cellValue), softly);
+                    assertOnValue(fromCellValue(cellValue), softly);
                 else
                     softly.fail("%s: cannot add assertion for formula cell @%s %s: '%s'".formatted(this.getClass().getSimpleName(), cellAddress, cellValueType, cell.getStringCellValue()));
                 return;
@@ -71,7 +72,7 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
         softly.fail("%s: cannot add assertion for cell @%s:'%s'".formatted(this.getClass().getSimpleName(), cellAddress, cell == null ? "<EMPTY>" : cell.getStringCellValue()));
     }
 
-    protected abstract void doAssertOnValue(TValue value, SoftAssertions softly);
+    protected abstract void assertOnValue(TValue value, SoftAssertions softly);
 
     protected abstract boolean isCellTypeSupported(CellType cellType);
 

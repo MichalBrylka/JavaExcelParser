@@ -29,6 +29,8 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
         return self();
     }
 
+    public abstract String getFilterName();
+
     @SuppressWarnings("unchecked")
     protected TAssertion self() {
         return (TAssertion) this;
@@ -155,6 +157,11 @@ final class EqualsTextAssertion extends TextAssertion<EqualsTextAssertion> {
     }
 
     @Override
+    public String getFilterName() {
+        return "equality";
+    }
+
+    @Override
     protected void apply(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
         if (this.ignoreNewLines) {
             Comparator<String> baseComparator = (s1, s2) ->
@@ -190,6 +197,11 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
     }
 
     @Override
+    public String getFilterName() {
+        return "contains";
+    }
+
+    @Override
     protected void apply(AbstractStringAssert<? extends AbstractStringAssert<?>> assertion) {
         if (this.ignoreCase) assertion.containsIgnoringCase(this.expectedSubstring);
         else assertion.contains(this.expectedSubstring);
@@ -218,6 +230,11 @@ final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
 
         this.pattern = pattern;
         this.singleLineMode = singleLineMode;
+    }
+
+    @Override
+    public String getFilterName() {
+        return "pattern match";
     }
 
     @Override

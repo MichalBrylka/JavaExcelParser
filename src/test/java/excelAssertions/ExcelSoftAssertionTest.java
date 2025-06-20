@@ -52,6 +52,19 @@ class ExcelSoftAssertionTest {
                         //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
                         cellAt("B1").withoutValue()
                 )
+
+                .inSheet("Strings").have(
+                        cellAt("A1").withText(containing("report").ignoreCase()),
+                        cellAt("A2").withText(equalTo("Hello World").caseSensitive()),
+                        cellAt("A3").withText(equalTo("123456")),
+                        cellAt("A4").withText(equalTo("\"\"")),
+                        cellAt("A5").withText(equalTo("Line1\n\nline2").ignoreCase().ignoreNewLines()),
+                        cellAt("A5").withText(matching("Line1.*line2").ignoreCase().singleLineMode()),
+                        cellAt("A6").withText(matching("^[1-6]{6}$")),
+                        cellAt("A7").withText(matching("""
+                                ^=sUm\\(\\d+,\\d+\\)$""").ignoreCase())
+                )
+
                 .inSheet("Errors").have(
                         cellAt("A1").withErrorText(containing("div/0").ignoreCase()),
                         cellAt("A2").withErrorText(equalTo("#N/A").caseSensitive()),
@@ -67,7 +80,7 @@ class ExcelSoftAssertionTest {
         exampleFile = Files.createTempFile("Example-", ".xlsx").toFile();
         try (FileOutputStream out = new FileOutputStream(exampleFile)) {
             generateTestExcelFile(out);
-            //java.awt.Desktop.getDesktop().open(tempFile);
+            //java.awt.Desktop.getDesktop().open(exampleFile);
         }
         assertThatExcelFile = assertThatExcel(exampleFile);
     }
@@ -80,16 +93,16 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile = null;
         }
 
-        if (exampleFile != null)
-            Files.deleteIfExists(exampleFile.toPath());
+        /*if (exampleFile != null)
+            Files.deleteIfExists(exampleFile.toPath());*/
     }
 
     private static void generateTestExcelFile(OutputStream output) throws IOException {
         try (var workbook = new XSSFWorkbook()) {
 
-            Map<String, java.util.List<CellBase>> sheets = new LinkedHashMap<>();
+            Map<String, List<CellBase>> sheets = new LinkedHashMap<>();
 
-            sheets.put("Numbers", java.util.List.of(
+            sheets.put("Numbers", List.of(
                     new FormulaCell("1+1", "0.00"),
                     new FormulaCell("100/3", "0.0000%"),
                     new NumberCell(Float.MAX_VALUE, "0.00"),
@@ -100,12 +113,12 @@ class ExcelSoftAssertionTest {
                     new FormulaCell("RAND()*100", "0.00")
             ));
 
-            sheets.put("Strings", java.util.List.of(
+            sheets.put("Strings", List.of(
                     new TextCell("Quarterly Report"),
                     new FormulaCell("""
                             "Hello "&"World\""""),
                     new FormulaCell("""
-                            FIXED(123456.789, 2, FALSE)"""),
+                            TEXT(123456,"##0° 00' 00''")"""),
                     new TextCell("\"\""),
                     new FormulaCell("""
                             "Line1"&CHAR(10)&"Line2\""""),
@@ -115,7 +128,7 @@ class ExcelSoftAssertionTest {
                             "=" & "SUM(1,2)"\s""")
             ));
 
-            sheets.put("Dates", java.util.List.of(
+            sheets.put("Dates", List.of(
                     new FormulaCell("DATE(2023,1,1)", "yyyy-mm-dd"),
                     new FormulaCell("DATE(1900,1,1)", "yyyy-mm-dd"),
                     new FormulaCell("TODAY()", "yyyy-mm-dd"),
@@ -124,7 +137,7 @@ class ExcelSoftAssertionTest {
                     new FormulaCell("EDATE(TODAY(),-1)", "yyyy-mm-dd")
             ));
 
-            sheets.put("Times", java.util.List.of(
+            sheets.put("Times", List.of(
                     new FormulaCell("TIME(12,0,0)", "hh:mm"),
                     new FormulaCell("TIME(23,59,59)", "hh:mm:ss"),
                     new FormulaCell("NOW()-TODAY()", "hh:mm:ss"),
@@ -133,7 +146,7 @@ class ExcelSoftAssertionTest {
                     new FormulaCell("MOD(NOW(),1)", "hh:mm:ss")
             ));
 
-            sheets.put("DateTimes", java.util.List.of(
+            sheets.put("DateTimes", List.of(
                     new FormulaCell("NOW()", "yyyy-mm-dd hh:mm:ss"),
                     new FormulaCell("DATE(2025,6,17)+TIME(15,30,0)", "[$-en-US]yyyy-mmm-dd hh:mm:ss;@"),
                     new FormulaCell("NOW()+1/24", "yyyy-mm-dd hh:mm:ss"),
@@ -141,7 +154,7 @@ class ExcelSoftAssertionTest {
                     new FormulaCell("TODAY()+TIME(23,59,59)", "yyyy-mm-dd hh:mm:ss")
             ));
 
-            sheets.put("Booleans", java.util.List.of(
+            sheets.put("Booleans", List.of(
                     new FormulaCell("1=1"),
                     new FormulaCell("ISNUMBER(123)"),
                     new FormulaCell("FALSE"),

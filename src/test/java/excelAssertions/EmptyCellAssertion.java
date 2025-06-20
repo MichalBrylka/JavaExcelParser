@@ -33,7 +33,7 @@ public final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAss
     }
 
     @Override
-    protected void doAssertOnValue(String s, SoftAssertions softly) {
+    protected void assertOnValue(String s, SoftAssertions softly) {
         //not used
     }
 

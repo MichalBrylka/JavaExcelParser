@@ -2,74 +2,37 @@ package excelAssertions;
 
 import org.apache.poi.ss.usermodel.*;
 import org.assertj.core.api.SoftAssertions;
+import org.jetbrains.annotations.NotNull;
 
-/*
-public final class StringCellAssertion extends CellAssertion<StringCellAssertion> {
-    private String expectedValue;
-    private String expectedContainsValue;
-    private boolean ignoreCase = false;
+@lombok.Getter(lombok.AccessLevel.PACKAGE)
+@lombok.EqualsAndHashCode(callSuper = true)
+public final class StringCellAssertion extends CellAssertion<String, StringCellAssertion> {
+    private final @NotNull TextAssertion<?> assertion;
 
-    public StringCellAssertion(String cellAddress) {
+    public StringCellAssertion(String cellAddress, @NotNull TextAssertion<?> assertion) {
         super(cellAddress);
-    }
-
-    public StringCellAssertion equalTo(String value) {
-        this.expectedValue = value;
-        this.ignoreCase = false;
-        this.expectedContainsValue = null;
-        return self();
-    }
-
-    public StringCellAssertion equalsIgnoreCase(String value) {
-        this.expectedValue = value;
-        this.ignoreCase = true;
-        this.expectedContainsValue = null;
-        return self();
-    }
-
-    public StringCellAssertion contains(String value) {
-        this.expectedValue = null;
-        this.ignoreCase = false;
-        this.expectedContainsValue = value;
-        return self();
-    }
-
-    public StringCellAssertion containsIgnoreCase(String value) {
-        this.expectedValue = null;
-        this.ignoreCase = true;
-        this.expectedContainsValue = value;
-        return self();
+        this.assertion = assertion;
     }
 
     @Override
-    protected boolean doAssertCore(Cell cell, SoftAssertions softly) {
-        if (cell == null || cell.getCellType() != CellType.STRING) {
-            softly.assertThat(cell)
-                    .as("Cell " + cellAddress + " is not a string cell.")
-                    .isNotNull()
-                    .extracting(Cell::getCellType)
-                    .isEqualTo(CellType.NUMERIC);
-            return true;
-        }
-
-        String actual = cell.getStringCellValue();
-
-        if (expectedValue != null) {
-            if (ignoreCase)
-                softly.assertThat(actual).isEqualTo(expectedValue);
-            else
-                softly.assertThat(actual).isEqualToIgnoringCase(expectedValue);
-
-            return true;
-        } else if (expectedContainsValue != null) {
-            if (ignoreCase)
-                softly.assertThat(actual).contains(expectedContainsValue);
-            else
-                softly.assertThat(actual).containsIgnoringCase(expectedContainsValue);
-
-            return true;
-        } else
-            return false;
-
+    protected void assertOnValue(String actualValue, SoftAssertions softly) {
+        var softAssert = softly.assertThat(actualValue)
+                .as(() -> "text %s check at %s".formatted(assertion.getFilterName(), cellAddress));
+        assertion.apply(softAssert);
     }
-}*/
+
+    @Override
+    protected boolean isCellTypeSupported(CellType cellType) {
+        return cellType == CellType.STRING;
+    }
+
+    @Override
+    protected String fromCell(Cell cell) {
+        return cell.getStringCellValue();
+    }
+
+    @Override
+    protected String fromCellValue(CellValue cellValue) {
+        return cellValue.getStringValue();
+    }
+}

@@ -14,7 +14,7 @@ final class BooleanCellAssertion extends CellAssertion<Boolean, BooleanCellAsser
     }
 
     @Override
-    protected void doAssertOnValue(Boolean actualValue, SoftAssertions softly) {
+    protected void assertOnValue(Boolean actualValue, SoftAssertions softly) {
         softly.assertThat(actualValue)
                 .as(() -> "boolean check at " + cellAddress)
                 .isEqualTo(expectedValue);
