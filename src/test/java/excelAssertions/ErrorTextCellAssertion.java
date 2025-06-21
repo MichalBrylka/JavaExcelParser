@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = true)
-public final class ErrorTextCellAssertion extends CellAssertion<String, ErrorTextCellAssertion> {
+public final class ErrorTextCellAssertion extends ValueCellAssertion<String, ErrorTextCellAssertion> {
     private final @NotNull TextAssertion<?> assertion;
 
     public ErrorTextCellAssertion(String cellAddress, @NotNull TextAssertion<?> assertion) {

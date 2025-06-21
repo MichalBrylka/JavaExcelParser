@@ -7,7 +7,7 @@ import org.assertj.core.data.Percentage;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = true)
-sealed abstract class NumberCellAssertion extends CellAssertion<Double, NumberCellAssertion> permits
+sealed abstract class NumberCellAssertion extends ValueCellAssertion<Double, NumberCellAssertion> permits
         CloseToOffsetNumberCellAssertion, CloseToPercentNumberCellAssertion, RelationNumberCellAssertion {
 
     protected NumberCellAssertion(String cellAddress) {

@@ -7,7 +7,7 @@ import org.assertj.core.api.SoftAssertions;
 
 @lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = true)
-public final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAssertion> {
+public final class EmptyCellAssertion extends CellAssertion<EmptyCellAssertion> {
     EmptyCellAssertion(String cellAddress) {
         super(cellAddress);
     }
@@ -30,25 +30,5 @@ public final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAss
         }
 
         softly.fail("Cell %s!%s expected to be empty but was not".formatted(getSheetName(), cellAddress));
-    }
-
-    @Override
-    protected void assertOnValue(String s, SoftAssertions softly) {
-        //not used
-    }
-
-    @Override
-    protected boolean isCellTypeSupported(CellType cellType) {
-        return false;//not used
-    }
-
-    @Override
-    protected String fromCell(Cell cell) {
-        return null;//not used
-    }
-
-    @Override
-    protected String fromCellValue(CellValue cellValue) {
-        return null;//not used
     }
 }

@@ -64,37 +64,33 @@ public class ExcelAssertionBuilder {
                 this.cellAddress = cellAddress;
             }
 
-            public CellAssertion<Double, ?> closeTo(Double expectedValue, Percentage percentage) {
+            public ValueCellAssertion<Double, ?> closeTo(Double expectedValue, Percentage percentage) {
                 return new CloseToPercentNumberCellAssertion(cellAddress, expectedValue, percentage);
             }
 
-            public CellAssertion<Double, ?> closeTo(Double expectedValue, Offset<Double> offset) {
+            public ValueCellAssertion<Double, ?> closeTo(Double expectedValue, Offset<Double> offset) {
                 return new CloseToOffsetNumberCellAssertion(cellAddress, expectedValue, offset);
             }
 
-            public CellAssertion<Double, ?> equalTo(Double expectedValue) {
+            public ValueCellAssertion<Double, ?> equalTo(Double expectedValue) {
                 return new EqualToNumberCellAssertion(cellAddress, expectedValue);
             }
 
-            public CellAssertion<Double, ?> greaterThan(Double expectedValue) {
+            public ValueCellAssertion<Double, ?> greaterThan(Double expectedValue) {
                 return new GreaterThanNumberCellAssertion(cellAddress, expectedValue);
             }
 
-            public CellAssertion<Double, ?> greaterThanOrEqualTo(Double expectedValue) {
+            public ValueCellAssertion<Double, ?> greaterThanOrEqualTo(Double expectedValue) {
                 return new GreaterThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
             }
 
-            public CellAssertion<Double, ?> lessThan(Double expectedValue) {
+            public ValueCellAssertion<Double, ?> lessThan(Double expectedValue) {
                 return new LessThanNumberCellAssertion(cellAddress, expectedValue);
             }
 
-            public CellAssertion<Double, ?> lessThanOrEqualTo(Double expectedValue) {
+            public ValueCellAssertion<Double, ?> lessThanOrEqualTo(Double expectedValue) {
                 return new LessThanOrEqualToNumberCellAssertion(cellAddress, expectedValue);
             }
-        }
-
-        public EmptyCellAssertion withoutValue() {
-            return new EmptyCellAssertion(cellAddress);
         }
 
         public BooleanCellAssertionBuilder withBoolean() {
@@ -108,15 +104,15 @@ public class ExcelAssertionBuilder {
                 this.cellAddress = cellAddress;
             }
 
-            public CellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
+            public ValueCellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
                 return new BooleanCellAssertion(cellAddress, expectedValue);
             }
 
-            public CellAssertion<Boolean, ?> isTrue() {
+            public ValueCellAssertion<Boolean, ?> ofTrue() {
                 return new BooleanCellAssertion(cellAddress, true);
             }
 
-            public CellAssertion<Boolean, ?> isFalse() {
+            public ValueCellAssertion<Boolean, ?> ofFalse() {
                 return new BooleanCellAssertion(cellAddress, false);
             }
         }
@@ -135,6 +131,14 @@ public class ExcelAssertionBuilder {
 
         public ErrorTextCellAssertion withErrorText(TextAssertion<?> textAssertion) {
             return new ErrorTextCellAssertion(cellAddress, textAssertion);
+        }
+
+        public EmptyCellAssertion empty() {
+            return new EmptyCellAssertion(cellAddress);
+        }
+
+        public SimpleCellAssertion withoutValueCheck() {
+            return new SimpleCellAssertion(cellAddress);
         }
     }
 }

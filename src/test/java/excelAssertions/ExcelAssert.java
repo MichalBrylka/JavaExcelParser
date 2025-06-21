@@ -42,17 +42,17 @@ public final class ExcelAssert implements AutoCloseable {
         return this;
     }
 
-    public ExcelAssert has(CellAssertion<?, ?> cellAssertion) {
+    public ExcelAssert has(CellAssertion<?> cellAssertion) {
         addAssert(cellAssertion);
         return this;
     }
 
-    public ExcelAssert have(CellAssertion<?, ?>... cellAssertions) {
+    public ExcelAssert have(CellAssertion<?>... cellAssertions) {
         for (var ca : cellAssertions) addAssert(ca);
         return this;
     }
 
-    private void addAssert(CellAssertion<?, ?> cellAssertion) {
+    private void addAssert(CellAssertion<?> cellAssertion) {
         cellAssertion
                 .withSheetName(sheet.getSheetName()) //bind sheet name for logging purposes
                 .applyAssert(cellAssertion.getCell(sheet), softly);
@@ -81,6 +81,6 @@ public final class ExcelAssert implements AutoCloseable {
     record SheetRefByIndex(@NotNull Integer ref) implements SheetRef<Integer> {
     }
 
-    record CellAssertionAtSheet(CellAssertion<?, ?> assertion, SheetRef<?> sheetRef) {
+    record CellAssertionAtSheet(CellAssertion<?> assertion, SheetRef<?> sheetRef) {
     }
 }

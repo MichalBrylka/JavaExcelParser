@@ -38,7 +38,7 @@ class ExcelSoftAssertionTest {
         assertThatExcelFile
                 //check empty
                 .inSheet(1).has(
-                        cellAt("B1").withoutValue()
+                        cellAt("B1").empty()
                 )
 
                 .inSheet("Numbers").have(
@@ -53,15 +53,15 @@ class ExcelSoftAssertionTest {
 
                         //cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
                         //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
-                        cellAt("B1").withoutValue()
+                        cellAt("B1").empty()
                 )
 
                 //formats
                 .inSheet("Numbers").have(
-                        cellAt("A1").withNumber().greaterThanOrEqualTo(0.0).withFormat("0.00"),
-                        cellAt("A2").withNumber().greaterThanOrEqualTo(0.0).withFormat(equalTo("0.0000%")),
-                        cellAt("A4").withNumber().greaterThanOrEqualTo(0.0).withFormat(containing("00000000")),
-                        cellAt("A5").withNumber().lessThan(0.0).withFormat(matching(".*##\\d"))
+                        cellAt("A1").withoutValueCheck().withFormat("0.00"),
+                        cellAt("A2").withoutValueCheck().withFormat(equalTo("0.0000%")),
+                        cellAt("A4").withoutValueCheck().withFormat(containing("00000000")),
+                        cellAt("A5").withoutValueCheck().withFormat(matching(".*##\\d"))
                 )
 
                 //formulas
