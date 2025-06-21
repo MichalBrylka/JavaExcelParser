@@ -17,7 +17,7 @@ public final class FormulaTextCellAssertion extends CellAssertion<String, Formul
     @Override
     protected void assertOnValue(String actualValue, SoftAssertions softly) {
         var softAssert = softly.assertThat(actualValue)
-                .as(() -> "formula text at %s to %s".formatted(cellAddress, assertion.getFilterDescription()));
+                .as(() -> "formula text at %s!%s to %s".formatted(getSheetName(), cellAddress, assertion.getFilterDescription()));
         assertion.apply(softAssert);
     }
 

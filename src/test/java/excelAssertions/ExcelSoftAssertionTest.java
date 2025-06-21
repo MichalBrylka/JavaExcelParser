@@ -36,6 +36,11 @@ class ExcelSoftAssertionTest {
     void testAllAssertionsPass() {
         usingNewExcelFile();
         assertThatExcelFile
+                //check empty
+                .inSheet(1).has(
+                        cellAt("B1").withoutValue()
+                )
+
                 .inSheet("Numbers").have(
 //                cellAt("A1").withNumber()..withFormat("0.00"),
 //                cellAt("A2").withNumber().     .withFormat("0.0000%"),

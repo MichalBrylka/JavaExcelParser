@@ -13,7 +13,7 @@ public final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAss
     }
 
     @Override
-    protected void doAssertCore(Cell cell, SoftAssertions softly) {
+    protected void applyAssertCore(Cell cell, SoftAssertions softly) {
         if (cell == null ||
             cell.getCellType() == CellType.BLANK ||
             cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty()
@@ -29,7 +29,7 @@ public final class EmptyCellAssertion extends CellAssertion<String, EmptyCellAss
                 return;
         }
 
-        softly.fail("Cell %s expected to be empty but was not".formatted(cellAddress));
+        softly.fail("Cell %s!%s expected to be empty but was not".formatted(getSheetName(), cellAddress));
     }
 
     @Override

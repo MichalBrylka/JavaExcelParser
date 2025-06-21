@@ -33,30 +33,41 @@ public sealed abstract class CellAssertion<TValue, TAssertion extends CellAssert
         return self();
     }
 
+    private String sheetName;
+
+    String getSheetName() {
+        return sheetName;
+    }
+
+    TAssertion withSheetName(String sheetName) {
+        this.sheetName = sheetName;
+        return self();
+    }
+
+
     @SuppressWarnings("unchecked")
     protected TAssertion self() {
         return (TAssertion) this;
     }
 
 
-    final void doAssert(Cell cell, SoftAssertions softly) {
-
+    final void applyAssert(Cell cell, SoftAssertions softly) {
         if (expectedFormat != null) {
             var softAssert = softly.assertThat(getCellFormat(cell))
-                    .as(() -> "cell format at %s to %s".formatted(cellAddress, expectedFormat.getFilterDescription()));
+                    .as(() -> "cell format at %s!%s to %s".formatted(sheetName, cellAddress, expectedFormat.getFilterDescription()));
             expectedFormat.apply(softAssert);
         }
         if (expectedFormatCategory != null) {
             var actual = detectFormatCategory(cell);
             softly.assertThat(actual)
-                    .as(() -> "expected format category at " + cellAddress)
+                    .as(() -> "expected format category at %s!%s".formatted(sheetName, cellAddress))
                     .isEqualTo(expectedFormatCategory);
         }
 
-        doAssertCore(cell, softly);
+        applyAssertCore(cell, softly);
     }
 
-    protected void doAssertCore(Cell cell, SoftAssertions softly) {
+    protected void applyAssertCore(Cell cell, SoftAssertions softly) {
         if (cell != null) {
             CellType cellType = cell.getCellType();
             if (isCellTypeSupported(cellType)) {
