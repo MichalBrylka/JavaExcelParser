@@ -21,7 +21,7 @@ record EqualToNumberAssertion(double expected) implements NumberAssertion {
 
     @Override
     public String toString() {
-        return "==" + expected;
+        return "== " + expected;
     }
 }
 
@@ -33,7 +33,7 @@ record GreaterThanNumberAssertion(double threshold) implements NumberAssertion {
 
     @Override
     public String toString() {
-        return ">" + threshold;
+        return "> " + threshold;
     }
 }
 
@@ -45,7 +45,7 @@ record GreaterThanOrEqualToNumberAssertion(double threshold) implements NumberAs
 
     @Override
     public String toString() {
-        return ">=" + threshold;
+        return ">= " + threshold;
     }
 }
 
@@ -57,7 +57,7 @@ record LessThanNumberAssertion(double threshold) implements NumberAssertion {
 
     @Override
     public String toString() {
-        return "<" + threshold;
+        return "< " + threshold;
     }
 }
 
@@ -69,7 +69,7 @@ record LessThanOrEqualToNumberAssertion(double threshold) implements NumberAsser
 
     @Override
     public String toString() {
-        return "<=" + threshold;
+        return "<= " + threshold;
     }
 }
 
@@ -100,9 +100,7 @@ record CloseToPercentNumberAssertion(double expected, Percentage percentage) imp
 record WithinRangeNumberAssertion(double from, double to, boolean exclusiveFrom,
                                   boolean exclusiveTo) implements NumberAssertion {
     public WithinRangeNumberAssertion {
-        if (to < from) {
-            throw new IllegalArgumentException("to must be >= from");
-        }
+        if (to < from) throw new IllegalArgumentException("to must be >= from");
     }
 
     public WithinRangeNumberAssertion(double from, double to) {
@@ -129,9 +127,7 @@ record WithinRangeNumberAssertion(double from, double to, boolean exclusiveFrom,
 record OutsideRangeNumberAssertion(double from, double to, boolean exclusiveFrom,
                                    boolean exclusiveTo) implements NumberAssertion {
     public OutsideRangeNumberAssertion {
-        if (to < from) {
-            throw new IllegalArgumentException("to must be >= from");
-        }
+        if (to < from) throw new IllegalArgumentException("to must be >= from");
     }
 
     public OutsideRangeNumberAssertion(double from, double to) {
