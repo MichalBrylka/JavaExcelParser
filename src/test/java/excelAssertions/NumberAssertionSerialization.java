@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 
-// Enum with discriminator info + aliases (using varargs)
+import static excelAssertions.NumberAssertionType.*;
+
 enum NumberAssertionType {
     EQUAL_TO("eq", "==", "="),
     GREATER_THAN("gt", ">"),
@@ -60,18 +61,20 @@ class NumberAssertionSerializer extends JsonSerializer<NumberAssertion> {
         gen.writeStartObject();
 
         switch (value) {
-            case EqualToNumberAssertion eq -> gen.writeNumberField("eq", eq.expected());
-            case GreaterThanNumberAssertion gt -> gen.writeNumberField("gt", gt.threshold());
-            case GreaterThanOrEqualToNumberAssertion gte -> gen.writeNumberField("gte", gte.threshold());
-            case LessThanNumberAssertion lt -> gen.writeNumberField("lt", lt.threshold());
-            case LessThanOrEqualToNumberAssertion lte -> gen.writeNumberField("lte", lte.threshold());
+            case EqualToNumberAssertion eq -> gen.writeNumberField(EQUAL_TO.primary, eq.expected());
+            case GreaterThanNumberAssertion gt -> gen.writeNumberField(GREATER_THAN.primary, gt.threshold());
+            case GreaterThanOrEqualToNumberAssertion gte ->
+                    gen.writeNumberField(GREATER_THAN_OR_EQUAL_TO.primary, gte.threshold());
+            case LessThanNumberAssertion lt -> gen.writeNumberField(LESS_THAN.primary, lt.threshold());
+            case LessThanOrEqualToNumberAssertion lte ->
+                    gen.writeNumberField(LESS_THAN_OR_EQUAL_TO.primary, lte.threshold());
             case CloseToOffsetNumberAssertion closeOffset -> {
                 String formatted = String.format("%s±%s", closeOffset.expected(), closeOffset.offset().value);
-                gen.writeStringField("close", formatted);
+                gen.writeStringField(CLOSE_TO_OFFSET.primary, formatted);
             }
             case CloseToPercentNumberAssertion closePercent -> {
                 String formatted = String.format("%s±%s%%", closePercent.expected(), closePercent.percentage().value);
-                gen.writeStringField("closePercent", formatted);
+                gen.writeStringField(CLOSE_TO_PERCENT.primary, formatted);
             }
             case WithinRangeNumberAssertion within -> {
                 String text = String.valueOf(within.exclusiveFrom() ? '(' : '[') +
@@ -79,7 +82,7 @@ class NumberAssertionSerializer extends JsonSerializer<NumberAssertion> {
                               ".." +
                               within.to() +
                               (within.exclusiveTo() ? ')' : ']');
-                gen.writeStringField("in", text);
+                gen.writeStringField(WITHIN_RANGE.primary, text);
             }
             case OutsideRangeNumberAssertion outside -> {
                 String text = String.valueOf(outside.exclusiveFrom() ? '(' : '[') +
@@ -87,7 +90,7 @@ class NumberAssertionSerializer extends JsonSerializer<NumberAssertion> {
                               ".." +
                               outside.to() +
                               (outside.exclusiveTo() ? ')' : ']');
-                gen.writeStringField("notIn", text);
+                gen.writeStringField(OUTSIDE_RANGE.primary, text);
             }
             default -> throw new IllegalStateException("Unsupported NumberAssertion subclass: " + value.getClass());
         }
