@@ -1,8 +1,11 @@
 package excelAssertions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.AbstractDoubleAssert;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,14 +19,14 @@ class NumberAssertionTest {
 
     @ParameterizedTest(name = "{1} {0}")
     @MethodSource("passingCases")
-    void shouldPassAssertion(NumberAssertion assertion, double actual) {
+    void apply_Positive(NumberAssertion assertion, double actual) {
         AbstractDoubleAssert<?> base = assertThat(actual);
         assertion.apply(base); // should not throw
     }
 
     @ParameterizedTest(name = "NOT {1} {0}")
     @MethodSource("failingCases")
-    void shouldFailAssertion(NumberAssertion assertion, double actual) {
+    void apply_Negative(NumberAssertion assertion, double actual) {
         assertThatThrownBy(() -> assertion.apply(assertThat(actual)))
                 .isInstanceOf(AssertionError.class);
     }
@@ -75,7 +78,150 @@ class NumberAssertionTest {
                 arguments(new LessThanNumberAssertion(Double.POSITIVE_INFINITY), Double.POSITIVE_INFINITY), // < ∞
                 arguments(new GreaterThanNumberAssertion(Double.NEGATIVE_INFINITY), Double.NEGATIVE_INFINITY), // > -∞
                 arguments(new WithinRangeNumberAssertion(Double.MIN_VALUE, Double.MIN_VALUE * 2), 0.0), // ∈ [min..2min]
-                arguments(new WithinRangeNumberAssertion(Double.MAX_VALUE - 1e292, Double.MAX_VALUE), Double.MAX_VALUE + 1e292) // ∈ [MAX-1e292..MAX]
+                arguments(new WithinRangeNumberAssertion(Double.MAX_VALUE - 1e292, Double.MAX_VALUE), 0.0) // ∈ [MAX-1e292..MAX]
+        );
+    }
+
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @ParameterizedTest
+    @MethodSource("serializationPositiveFlow")
+    void serialization_Positive(NumberAssertion input, String expectedJson) throws Exception {
+        String json = MAPPER.writeValueAsString(input);
+        assertThat(json).isEqualToIgnoringWhitespace(expectedJson);
+    }
+
+    @ParameterizedTest
+    @MethodSource("serializationPositiveFlow")
+    void deserialization_Positive(NumberAssertion expected, String json) throws Exception {
+        NumberAssertion actual = MAPPER.readValue(json, NumberAssertion.class);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> serializationPositiveFlow() {
+        return Stream.of(
+                arguments(new EqualToNumberAssertion(42.0), """
+                        {"eq":42.0}"""),
+                arguments(new GreaterThanNumberAssertion(10.0), """
+                        {"gt":10.0}"""),
+                arguments(new GreaterThanOrEqualToNumberAssertion(5.5), """
+                        {"gte":5.5}"""),
+                arguments(new LessThanNumberAssertion(3.14), """
+                        {"lt":3.14}"""),
+                arguments(new LessThanOrEqualToNumberAssertion(2.71), """
+                        {"lte":2.71}"""),
+                arguments(new CloseToOffsetNumberAssertion(100.0, Offset.offset(0.5)), """
+                        {"close":"100.0±0.5"}"""),
+                arguments(new CloseToPercentNumberAssertion(50.0, Percentage.withPercentage(10.0)), """
+                        {"closePercent":"50.0±10.0%"}"""),
+                arguments(new WithinRangeNumberAssertion(1.0, 10.0, false, true), """
+                        {"in":"[1.0..10.0)"}"""),
+                arguments(new OutsideRangeNumberAssertion(0.0, 100.0, true, false), """
+                        {"notIn":"(0.0..100.0]"}""")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("deserialization_PositiveAlternative")
+    void deserialization_PositiveAlternative(NumberAssertion expected, String json) throws Exception {
+        NumberAssertion actual = MAPPER.readValue(json, NumberAssertion.class);
+        assertThat(actual).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> deserialization_PositiveAlternative() {
+        return Stream.of(
+                // EqualToNumberAssertion aliases
+                arguments(new EqualToNumberAssertion(42.0), """
+                        {"eq":42.0}"""),
+                arguments(new EqualToNumberAssertion(42.0), """
+                        {"==":42.0}"""),
+                arguments(new EqualToNumberAssertion(42.0), """
+                        {"=":42.0}"""),
+
+                // GreaterThanNumberAssertion aliases
+                arguments(new GreaterThanNumberAssertion(10.0), """
+                        {"gt":10.0}"""),
+                arguments(new GreaterThanNumberAssertion(10.0), """
+                        {">":10.0}"""),
+
+                // GreaterThanOrEqualToNumberAssertion aliases
+                arguments(new GreaterThanOrEqualToNumberAssertion(5.5), """
+                        {"gte":5.5}"""),
+                arguments(new GreaterThanOrEqualToNumberAssertion(5.5), """
+                        {">=":5.5}"""),
+
+                // LessThanNumberAssertion aliases
+                arguments(new LessThanNumberAssertion(3.14), """
+                        {"lt":3.14}"""),
+                arguments(new LessThanNumberAssertion(3.14), """
+                        {"<":3.14}"""),
+
+                // LessThanOrEqualToNumberAssertion aliases
+                arguments(new LessThanOrEqualToNumberAssertion(2.71), """
+                        {"lte":2.71}"""),
+                arguments(new LessThanOrEqualToNumberAssertion(2.71), """
+                        {"<=":2.71}"""),
+
+                // CloseToOffsetNumberAssertion with ± and +-
+                arguments(new CloseToOffsetNumberAssertion(100.0, Offset.offset(0.5)), """
+                        {"close":"100.0±0.5"}"""),
+                arguments(new CloseToOffsetNumberAssertion(100.0, Offset.offset(0.5)), """
+                        {"close":"100.0+-0.5"}"""),
+                arguments(new CloseToOffsetNumberAssertion(100.0, Offset.offset(0.5)), """
+                        {"~":"100.0±0.5"}"""),
+                arguments(new CloseToOffsetNumberAssertion(100.0, Offset.offset(0.5)), """
+                        {"≈":"100.0+-0.5"}"""),
+
+                // CloseToPercentNumberAssertion with ± and +-
+                arguments(new CloseToPercentNumberAssertion(50.0, Percentage.withPercentage(10.0)), """
+                        {"closePercent":"50.0±10.0%"}"""),
+                arguments(new CloseToPercentNumberAssertion(50.0, Percentage.withPercentage(10.0)), """
+                        {"close%":"50.0+-10.0%"}"""),
+                arguments(new CloseToPercentNumberAssertion(50.0, Percentage.withPercentage(10.0)), """
+                        {"≈%":"50.0±10.0%"}"""),
+                arguments(new CloseToPercentNumberAssertion(50.0, Percentage.withPercentage(10.0)), """
+                        {"~%":"50.0+-10.0%"}"""),
+
+                // WithinRangeNumberAssertion aliases with brackets and parentheses
+                arguments(new WithinRangeNumberAssertion(1.0, 10.0, false, true), """
+                        {"in":"[1.0..10.0)"}"""),
+                arguments(new WithinRangeNumberAssertion(1.0, 10.0, false, true), """
+                        {"∈":"[1.0..10.0)"}"""),
+                arguments(new WithinRangeNumberAssertion(1.0, 10.0, false, true), """
+                        {"within":"[1.0..10.0)"}"""),
+
+                // OutsideRangeNumberAssertion aliases with brackets and parentheses
+                arguments(new OutsideRangeNumberAssertion(0.0, 100.0, true, false), """
+                        {"notIn":"(0.0..100.0]"}"""),
+                arguments(new OutsideRangeNumberAssertion(0.0, 100.0, true, false), """
+                        {"∉":"(0.0..100.0]"}"""),
+                arguments(new OutsideRangeNumberAssertion(0.0, 100.0, true, false), """
+                        {"out":"(0.0..100.0]"}"""),
+                arguments(new OutsideRangeNumberAssertion(0.0, 100.0, true, false), """
+                        {"beyond":"(0.0..100.0]"}""")
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("serializationNegativeFlow")
+    void deserialization_Negative(String json) {
+        assertThatThrownBy(() -> MAPPER.readValue(json, NumberAssertion.class))
+                .isInstanceOf(JsonProcessingException.class);
+    }
+
+    static Stream<Named<String>> serializationNegativeFlow() {
+        return Stream.of(
+                Named.of("Empty JSON object", "{}"),
+                Named.of("Unknown discriminator field", "{\"unknown\":123}"),
+                Named.of("Multiple fields", "{\"eq\":42, \"gt\":10}"),
+                Named.of("Wrong value type for number discriminator", "{\"eq\":\"not_a_number\"}"),
+                Named.of("Invalid close offset format", "{\"close\":\"100+0.5\"}"),
+                Named.of("Invalid close percent format", "{\"closePercent\":\"50±abc%\"}"),
+                Named.of("Invalid within range format", "{\"in\":\"[1..ten]\"}"),
+                Named.of("Invalid outside range format", "{\"notIn\":\"(zero..100)\"}"),
+                Named.of("Not an object", "\"eq\""),
+                Named.of("Empty field name", "{\"\":42}")
         );
     }
 }
