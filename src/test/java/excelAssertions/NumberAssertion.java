@@ -6,7 +6,7 @@ import org.assertj.core.data.Percentage;
 
 @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = NumberAssertionSerializer.class)
 @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = NumberAssertionDeserializer.class)
-sealed interface NumberAssertion permits CloseToOffsetNumberAssertion, CloseToPercentNumberAssertion, EqualToNumberAssertion, GreaterThanNumberAssertion,
+public sealed interface NumberAssertion permits CloseToOffsetNumberAssertion, CloseToPercentNumberAssertion, EqualToNumberAssertion, GreaterThanNumberAssertion,
         GreaterThanOrEqualToNumberAssertion, LessThanNumberAssertion, LessThanOrEqualToNumberAssertion, WithinRangeNumberAssertion, OutsideRangeNumberAssertion {
 
     void apply(AbstractDoubleAssert<? extends AbstractDoubleAssert<?>> assertion);

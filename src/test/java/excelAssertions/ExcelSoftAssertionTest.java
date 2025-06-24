@@ -1,5 +1,7 @@
 package excelAssertions;
 
+import org.assertj.core.data.Offset;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.*;
 import org.opentest4j.MultipleFailuresError;
 import org.apache.poi.ss.usermodel.*;
@@ -25,8 +27,9 @@ class ExcelSoftAssertionTest {
         // The test will execute all `has()` checks and report all failures at the end.
         assertThatThrownBy(() -> {
             assertThatExcelFile
-                    .has(cellAt("B5").withNumber().closeTo(160.75, offset(0.01)))     // This will also fail
-            ;
+                    .has(
+                            cellAt("B5").withNumber(closeTo(160.75, offset(0.01)))
+                    );
         })
                 .isInstanceOf(MultipleFailuresError.class)
                 .hasMessageContaining("Multiple Failures (2 failures)"); // AssertJ wraps multiple errors
@@ -42,18 +45,18 @@ class ExcelSoftAssertionTest {
                 )
 
                 .inSheet("Numbers").have(
-//                cellAt("A1").withNumber()..withFormat("0.00"),
-//                cellAt("A2").withNumber().     .withFormat("0.0000%"),
-//                cellAt("A3").withNumber().     .withFormat("0.00"),
-//                cellAt("A4").withNumber().     .withFormat("0.00000000"),
-//                cellAt("A5").withNumber().     .withFormat("#,##0"),
-//                cellAt("A6").withNumber().     .withFormat("0.0000"),
-//                cellAt("A7").withNumber().     .withFormat("0.0000"),
-//                cellAt("A8").withNumber().     .withFormat("0.00"),
+                        cellAt("A1").withNumber(equalTo(2.0)).withFormat("0.00"),
+                        cellAt("A2").withNumber(greaterThan(33)).withFormat("0.0000%"),
+                        cellAt("A3").withNumber(greaterThanOrEqualTo(10)).withFormat("0.00"),
+                        cellAt("A4").withNumber(lessThan(0.0000001)).withFormat("0.00000000"),
+                        cellAt("A5").withNumber(lessThanOrEqualTo(-9999999)).withFormat("#,##0"),
+                        cellAt("A6").withNumber(closeTo(1.4142, Offset.offset(0.0001))).withFormat("0.0000"),
+                        cellAt("A7").withNumber(closeTo(3.14, Percentage.withPercentage(0.1))).withFormat("0.0000"),
 
-                        //cellAt("B5").withNumber().closeTo(150.0, withinPercentage(1)).withFormat("0.000"),
-                        //cellAt("B5").withNumber().closeTo(150.75, offset(0.01)).withFormat("0.000"),
-                        cellAt("B1").empty()
+                        cellAt("A1").withNumber(withinRange(1.99, 2.01)),
+                        cellAt("A1").withNumber(withinRange(1.99999, 2.00001, true, true)),
+                        cellAt("A1").withNumber(outsideRange(2.01, 2.02)),
+                        cellAt("A1").withNumber(outsideRange(2.00, 2.02, true, true))
                 )
 
                 //formats
@@ -79,7 +82,7 @@ class ExcelSoftAssertionTest {
                 .inSheet("Strings").have(
                         cellAt("A1").withText(containing("report").ignoreCase()),
                         cellAt("A2").withText(equalTo("Hello World").caseSensitive()),
-                        cellAt("A3").withText(equalTo("123456")),
+                        cellAt("A3").withText("123456"),
                         cellAt("A4").withText(equalTo("\"\"")),
                         cellAt("A5").withText(equalTo("Line1\n\nline2").ignoreCase().ignoreNewLines()),
                         cellAt("A5").withText(matching("Line1.*line2").ignoreCase().dotallMode()),
