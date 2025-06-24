@@ -25,12 +25,10 @@ class ExcelSoftAssertionTest {
         usingNewExcelFile();
 
         // The test will execute all `has()` checks and report all failures at the end.
-        assertThatThrownBy(() -> {
-            assertThatExcelFile
-                    .has(
-                            cellAt("B5").withNumber(closeTo(160.75, offset(0.01)))
-                    );
-        })
+        assertThatThrownBy(() -> assertThatExcelFile
+                .has(
+                        cellAt("B5").withNumber(closeTo(160.75, offset(0.01)))
+                ))
                 .isInstanceOf(MultipleFailuresError.class)
                 .hasMessageContaining("Multiple Failures (2 failures)"); // AssertJ wraps multiple errors
     }
@@ -44,6 +42,7 @@ class ExcelSoftAssertionTest {
                         cellAt("B1").empty()
                 )
 
+                //numbers
                 .inSheet("Numbers").have(
                         cellAt("A1").withNumber(equalTo(2.0)).withFormat("0.00"),
                         cellAt("A2").withNumber(greaterThan(33)).withFormat("0.0000%"),
@@ -61,10 +60,10 @@ class ExcelSoftAssertionTest {
 
                 //formats
                 .inSheet("Numbers").have(
-                        cellAt("A1").withoutValueCheck().withFormat("0.00"),
-                        cellAt("A2").withoutValueCheck().withFormat(equalTo("0.0000%")),
-                        cellAt("A4").withoutValueCheck().withFormat(containing("00000000")),
-                        cellAt("A5").withoutValueCheck().withFormat(matching(".*##\\d"))
+                        cellAt("A1").exists().withFormat("0.00"),
+                        cellAt("A2").exists().withFormat(equalTo("0.0000%")),
+                        cellAt("A4").exists().withFormat(containing("00000000")),
+                        cellAt("A5").exists().withFormat(matching(".*##\\d"))
                 )
 
                 //formulas
@@ -97,6 +96,13 @@ class ExcelSoftAssertionTest {
                         cellAt("A2").withErrorText(equalTo("#N/A").caseSensitive()),
                         cellAt("A3").withErrorText(equalTo("#NUM!\n").ignoreNewLines()),
                         cellAt("A4").withErrorText(matching("^#VaL\\w[a-z]!$").ignoreCase())
+                )
+
+                //booleans
+                .inSheet("Booleans").have(
+                        cellAt("A1").withBoolean(ofTrue()),
+                        cellAt("A2").withBoolean(equalTo(true)),
+                        cellAt("A3").withBoolean(ofFalse())
                 )
         ;
     }

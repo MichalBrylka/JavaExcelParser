@@ -67,50 +67,29 @@ public class ExcelAssertionBuilder {
 
     public static NumberAssertion outsideRange(double from, double to, boolean exclusiveFrom, boolean exclusiveTo) {return new OutsideRangeNumberAssertion(from, to, exclusiveFrom, exclusiveTo);}
 
+    public record BooleanAssertion(boolean expected) {}
 
-    public static class ExcelCellAssertionBuilder {
-        private final String cellAddress;
+    public static BooleanAssertion equalTo(boolean expectedValue) {return new BooleanAssertion(expectedValue);}
 
-        private ExcelCellAssertionBuilder(String cellAddress) {
-            this.cellAddress = cellAddress;
-        }
+    public static BooleanAssertion ofTrue() {return new BooleanAssertion(true);}
 
-        public BooleanCellAssertionBuilder withBoolean() {
-            return new BooleanCellAssertionBuilder(cellAddress);
-        }
+    public static BooleanAssertion ofFalse() {return new BooleanAssertion(false);}
 
-        public static class BooleanCellAssertionBuilder {
-            private final String cellAddress;
+    public record ExcelCellAssertionBuilder(String cellAddress) {
+        public ValueCellAssertion<Boolean, ?> withBoolean(BooleanAssertion booleanAssertion) {return new BooleanCellAssertion(cellAddress, booleanAssertion.expected);}
 
-            public BooleanCellAssertionBuilder(String cellAddress) {
-                this.cellAddress = cellAddress;
-            }
+        public ValueCellAssertion<Double, ?> withNumber(NumberAssertion numberAssertion) {return new NumberCellAssertion(cellAddress, numberAssertion);}
 
-            public ValueCellAssertion<Boolean, ?> equalTo(boolean expectedValue) {
-                return new BooleanCellAssertion(cellAddress, expectedValue);
-            }
+        public ValueCellAssertion<String, ?> withText(TextAssertion<?> textAssertion) {return new TextCellAssertion(cellAddress, textAssertion);}
 
-            public ValueCellAssertion<Boolean, ?> ofTrue() {
-                return new BooleanCellAssertion(cellAddress, true);
-            }
+        public ValueCellAssertion<String, ?> withText(String expectedText) {return new TextCellAssertion(cellAddress, new EqualsTextAssertion(expectedText, false, false));}
 
-            public ValueCellAssertion<Boolean, ?> ofFalse() {
-                return new BooleanCellAssertion(cellAddress, false);
-            }
-        }
+        public ValueCellAssertion<String, ?> withFormulaText(TextAssertion<?> textAssertion) {return new FormulaTextCellAssertion(cellAddress, textAssertion);}
 
-        public NumberCellAssertion withNumber(NumberAssertion numberAssertion) {return new NumberCellAssertion(cellAddress, numberAssertion);}
+        public ValueCellAssertion<String, ?> withErrorText(TextAssertion<?> textAssertion) {return new ErrorTextCellAssertion(cellAddress, textAssertion);}
 
-        public TextCellAssertion withText(TextAssertion<?> textAssertion) {return new TextCellAssertion(cellAddress, textAssertion);}
+        public CellAssertion<?> empty() {return new EmptyCellAssertion(cellAddress);}
 
-        public TextCellAssertion withText(String expectedText) {return new TextCellAssertion(cellAddress, new EqualsTextAssertion(expectedText, false, false));}
-
-        public FormulaTextCellAssertion withFormulaText(TextAssertion<?> textAssertion) {return new FormulaTextCellAssertion(cellAddress, textAssertion);}
-
-        public ErrorTextCellAssertion withErrorText(TextAssertion<?> textAssertion) {return new ErrorTextCellAssertion(cellAddress, textAssertion);}
-
-        public EmptyCellAssertion empty() {return new EmptyCellAssertion(cellAddress);}
-
-        public SimpleCellAssertion withoutValueCheck() {return new SimpleCellAssertion(cellAddress);}
+        public CellAssertion<?> exists() {return new SimpleCellAssertion(cellAddress);}
     }
 }
