@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,9 +41,9 @@ enum NumberAssertionType {
         this.primary = primary;
     }
 
-    static Optional<NumberAssertionType> fromDiscriminator(String disc) {
+    static Optional<NumberAssertionType> fromDiscriminator(String discriminator) {
         return Arrays.stream(values())
-                .filter(t -> t.aliases.contains(disc))
+                .filter(t -> t.aliases.contains(discriminator))
                 .findFirst();
     }
 }
@@ -96,116 +97,92 @@ class NumberAssertionSerializer extends JsonSerializer<NumberAssertion> {
 }
 
 class NumberAssertionDeserializer extends JsonDeserializer<NumberAssertion> {
-
-    private static final Pattern CLOSE_TO_OFFSET_PATTERN = Pattern.compile("([-+]?\\d*\\.?\\d+)\\s*(±|\\+-)\\s*(\\d*\\.?\\d+)");
-    private static final Pattern CLOSE_TO_PERCENT_PATTERN = Pattern.compile("([-+]?\\d*\\.?\\d+)\\s*(±|\\+-)\\s*(\\d*\\.?\\d+)%");
-    private static final Pattern RANGE_PATTERN = Pattern.compile("([\\[(])\\s*([-+]?\\d*\\.?\\d+)\\s*\\.\\.\\s*([-+]?\\d*\\.?\\d+)\\s*([])])");
+    private static final String CLOSE_TO_PATTERN = "^(?<expected>[-+]?\\d*\\.?\\d+)\\s*(±|\\+-)\\s*(?<tolerance>\\d*\\.?\\d+)";
+    private static final Pattern CLOSE_TO_OFFSET_PATTERN = Pattern.compile(CLOSE_TO_PATTERN + "$");
+    private static final Pattern CLOSE_TO_PERCENT_PATTERN = Pattern.compile(CLOSE_TO_PATTERN + "%$");
+    private static final Pattern RANGE_PATTERN = Pattern.compile(
+            "^\\s*(?<open>[\\[(])\\s*" +
+            "(?<from>[-+]?\\d*\\.?\\d+)\\s*\\.\\.\\s*" +
+            "(?<to>[-+]?\\d*\\.?\\d+)\\s*" +
+            "(?<close>[])])\\s*$"
+    );
 
     @Override
-    public NumberAssertion deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        if (p.getCurrentToken() != JsonToken.START_OBJECT) {
+    public NumberAssertion deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+        if (p.getCurrentToken() != JsonToken.START_OBJECT)
             throw JsonMappingException.from(p, "Expected start of object");
-        }
 
         p.nextToken();
-        if (p.getCurrentToken() != JsonToken.FIELD_NAME) {
+        if (p.getCurrentToken() != JsonToken.FIELD_NAME)
             throw JsonMappingException.from(p, "Expected single field as discriminator");
-        }
 
         String disc = p.currentName();
         NumberAssertionType type = NumberAssertionType.fromDiscriminator(disc)
-                .orElseThrow(() -> JsonMappingException.from(p, "Unknown discriminator: " + disc));
+                .orElseThrow(() -> JsonMappingException.from(p, "Unknown discriminator: '%s'".formatted(disc)));
 
         p.nextToken();
 
-        NumberAssertion result;
-        switch (type) {
-            case EQUAL_TO -> result = new EqualToNumberAssertion(parseNumberOrThrow(p, ctxt));
-            case GREATER_THAN -> result = new GreaterThanNumberAssertion(parseNumberOrThrow(p, ctxt));
-            case GREATER_THAN_OR_EQUAL_TO ->
-                    result = new GreaterThanOrEqualToNumberAssertion(parseNumberOrThrow(p, ctxt));
-            case LESS_THAN -> result = new LessThanNumberAssertion(parseNumberOrThrow(p, ctxt));
-            case LESS_THAN_OR_EQUAL_TO -> result = new LessThanOrEqualToNumberAssertion(parseNumberOrThrow(p, ctxt));
-            case CLOSE_TO_OFFSET -> result = parseCloseToOffset(p, ctxt);
-            case CLOSE_TO_PERCENT -> result = parseCloseToPercent(p, ctxt);
-            case WITHIN_RANGE -> result = parseWithinRange(p, ctxt);
-            case OUTSIDE_RANGE -> result = parseOutsideRange(p, ctxt);
-            default -> throw JsonMappingException.from(p, "Unsupported discriminator: " + disc);
-        }
+        NumberAssertion result = switch (type) {
+            case EQUAL_TO -> parseNumberAssertionOrThrow(p, EqualToNumberAssertion::new);
+            case GREATER_THAN -> parseNumberAssertionOrThrow(p, GreaterThanNumberAssertion::new);
+            case GREATER_THAN_OR_EQUAL_TO -> parseNumberAssertionOrThrow(p, GreaterThanOrEqualToNumberAssertion::new);
+            case LESS_THAN -> parseNumberAssertionOrThrow(p, LessThanNumberAssertion::new);
+            case LESS_THAN_OR_EQUAL_TO -> parseNumberAssertionOrThrow(p, LessThanOrEqualToNumberAssertion::new);
+            case CLOSE_TO_OFFSET ->
+                    parseCloseTo(p, CLOSE_TO_OFFSET_PATTERN, (expected, tolerance) -> new CloseToOffsetNumberAssertion(expected, Offset.offset(tolerance)));
+            case CLOSE_TO_PERCENT ->
+                    parseCloseTo(p, CLOSE_TO_PERCENT_PATTERN, (expected, tolerance) -> new CloseToPercentNumberAssertion(expected, Percentage.withPercentage(tolerance)));
+            case WITHIN_RANGE -> parseRange(p, WithinRangeNumberAssertion::new);
+            case OUTSIDE_RANGE -> parseRange(p, OutsideRangeNumberAssertion::new);
+        };
 
         p.nextToken();
-        if (p.getCurrentToken() != JsonToken.END_OBJECT) {
+        if (p.getCurrentToken() != JsonToken.END_OBJECT)
             throw JsonMappingException.from(p, "Expected end of object after single field");
-        }
 
         return result;
     }
 
-    private double parseNumberOrThrow(JsonParser p, DeserializationContext ctxt) throws IOException {
-        JsonToken token = p.getCurrentToken();
-        if (token == JsonToken.VALUE_NUMBER_FLOAT || token == JsonToken.VALUE_NUMBER_INT) {
-            return p.getDoubleValue();
-        }
-        throw JsonMappingException.from(p, "Expected numeric value");
+    private static <T extends NumberAssertion> T parseNumberAssertionOrThrow(JsonParser parser, Function<Double, T> assertionSupplier) throws IOException {
+        return switch (parser.getCurrentToken()) {
+            case VALUE_NUMBER_FLOAT, VALUE_NUMBER_INT -> assertionSupplier.apply(parser.getDoubleValue());
+            case null, default -> throw JsonMappingException.from(parser, "Expected numeric value");
+        };
     }
 
-    private CloseToOffsetNumberAssertion parseCloseToOffset(JsonParser p, DeserializationContext ctxt) throws IOException {
-        if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-            throw JsonMappingException.from(p, "Expected string for close offset");
-        }
-        String s = p.getText().replace(" ", "");
-        Matcher m = CLOSE_TO_OFFSET_PATTERN.matcher(s);
-        if (!m.matches()) {
-            throw JsonMappingException.from(p, "Invalid format for close offset: " + s);
-        }
-        double expected = Double.parseDouble(m.group(1));
-        double offsetValue = Double.parseDouble(m.group(3));
-        return new CloseToOffsetNumberAssertion(expected, Offset.offset(offsetValue));
+    private static <T extends NumberAssertion> T parseCloseTo(JsonParser parser, Pattern pattern, CloseToSupplier<T> closeToSupplier) throws IOException {
+        if (parser.getCurrentToken() != JsonToken.VALUE_STRING)
+            throw JsonMappingException.from(parser, "Expected string for close-to pattern");
+        String text = parser.getText().replace(" ", "").trim();
+        Matcher m = pattern.matcher(text);
+        if (!m.matches())
+            throw JsonMappingException.from(parser, "Invalid format for close-to pattern: " + text);
+
+        double expected = Double.parseDouble(m.group("expected"));
+        double tolerance = Double.parseDouble(m.group("tolerance"));
+        return closeToSupplier.get(expected, tolerance);
     }
 
-    private CloseToPercentNumberAssertion parseCloseToPercent(JsonParser p, DeserializationContext ctxt) throws IOException {
-        if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-            throw JsonMappingException.from(p, "Expected string for close percent");
-        }
-        String s = p.getText().replace(" ", "");
-        Matcher m = CLOSE_TO_PERCENT_PATTERN.matcher(s);
-        if (!m.matches()) {
-            throw JsonMappingException.from(p, "Invalid format for close percent: " + s);
-        }
-        double expected = Double.parseDouble(m.group(1));
-        double percentValue = Double.parseDouble(m.group(3));
-        return new CloseToPercentNumberAssertion(expected, Percentage.withPercentage(percentValue));
-    }
-
-    private WithinRangeNumberAssertion parseWithinRange(JsonParser p, DeserializationContext ctxt) throws IOException {
-        if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-            throw JsonMappingException.from(p, "Expected string for within range");
-        }
+    private static <T extends NumberAssertion> T parseRange(JsonParser p, RangeSupplier<T> rangeSupplier) throws IOException {
+        if (p.getCurrentToken() != JsonToken.VALUE_STRING)
+            throw JsonMappingException.from(p, "Expected string for within/outside range");
         String s = p.getText().replace(" ", "");
         Matcher m = RANGE_PATTERN.matcher(s);
-        if (!m.matches()) {
-            throw JsonMappingException.from(p, "Invalid format for within range: " + s);
-        }
-        boolean exclusiveFrom = m.group(1).equals("(");
-        boolean exclusiveTo = m.group(4).equals(")");
-        double from = Double.parseDouble(m.group(2));
-        double to = Double.parseDouble(m.group(3));
-        return new WithinRangeNumberAssertion(from, to, exclusiveFrom, exclusiveTo);
+        if (!m.matches()) throw JsonMappingException.from(p, "Invalid format for within/outside range: " + s);
+        boolean exclusiveFrom = m.group("open").equals("(");
+        boolean exclusiveTo = m.group("close").equals(")");
+        double from = Double.parseDouble(m.group("from"));
+        double to = Double.parseDouble(m.group("to"));
+        return rangeSupplier.get(from, to, exclusiveFrom, exclusiveTo);
     }
 
-    private OutsideRangeNumberAssertion parseOutsideRange(JsonParser p, DeserializationContext ctxt) throws IOException {
-        if (p.getCurrentToken() != JsonToken.VALUE_STRING) {
-            throw JsonMappingException.from(p, "Expected string for outside range");
-        }
-        String s = p.getText().replace(" ", "");
-        Matcher m = RANGE_PATTERN.matcher(s);
-        if (!m.matches()) {
-            throw JsonMappingException.from(p, "Invalid format for outside range: " + s);
-        }
-        boolean exclusiveFrom = m.group(1).equals("(");
-        boolean exclusiveTo = m.group(4).equals(")");
-        double from = Double.parseDouble(m.group(2));
-        double to = Double.parseDouble(m.group(3));
-        return new OutsideRangeNumberAssertion(from, to, exclusiveFrom, exclusiveTo);
+    @FunctionalInterface
+    private interface CloseToSupplier<T extends NumberAssertion> {
+        T get(double expected, double tolerance);
+    }
+
+    @FunctionalInterface
+    private interface RangeSupplier<T extends NumberAssertion> {
+        T get(double from, double to, boolean exclusiveFrom, boolean exclusiveTo);
     }
 }

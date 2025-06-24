@@ -1,6 +1,6 @@
 package excelAssertions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.AbstractDoubleAssert;
 import org.assertj.core.data.Offset;
@@ -205,23 +205,33 @@ class NumberAssertionTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("serializationNegativeFlow")
-    void deserialization_Negative(String json) {
+    void deserialization_Negative(String json, String expectedErrorMessagePart) {
         assertThatThrownBy(() -> MAPPER.readValue(json, NumberAssertion.class))
-                .isInstanceOf(JsonProcessingException.class);
+                .isInstanceOf(JsonMappingException.class)
+                .hasMessageContaining(expectedErrorMessagePart);
     }
 
-    static Stream<Named<String>> serializationNegativeFlow() {
+    static Stream<Arguments> serializationNegativeFlow() {
         return Stream.of(
-                Named.of("Empty JSON object", "{}"),
-                Named.of("Unknown discriminator field", "{\"unknown\":123}"),
-                Named.of("Multiple fields", "{\"eq\":42, \"gt\":10}"),
-                Named.of("Wrong value type for number discriminator", "{\"eq\":\"not_a_number\"}"),
-                Named.of("Invalid close offset format", "{\"close\":\"100+0.5\"}"),
-                Named.of("Invalid close percent format", "{\"closePercent\":\"50±abc%\"}"),
-                Named.of("Invalid within range format", "{\"in\":\"[1..ten]\"}"),
-                Named.of("Invalid outside range format", "{\"notIn\":\"(zero..100)\"}"),
-                Named.of("Not an object", "\"eq\""),
-                Named.of("Empty field name", "{\"\":42}")
+                arguments(Named.of("Empty JSON object", "{}"), "Expected single field as discriminator"),
+                arguments(Named.of("Unknown discriminator field", """
+                        {"unknown":123}"""), "Unknown discriminator: 'unknown'"),
+                arguments(Named.of("Multiple fields", """
+                        {"eq":42, "gt":10}"""), "Expected end of object after single field"),
+                arguments(Named.of("Wrong value type for number discriminator", """
+                        {"eq":"not_a_number"}"""), "Expected numeric value"),
+                arguments(Named.of("Invalid close offset format", """
+                        {"close":"100+0.5"}"""), "Invalid format for close-to pattern: 100+0.5"),
+                arguments(Named.of("Invalid close percent format", """
+                        {"closePercent":"50±abc%"}"""), "Invalid format for close-to pattern: 50±abc%"),
+                arguments(Named.of("Invalid within range format", """
+                        {"in":"[1..ten]"}"""), "Invalid format for within/outside range: [1..ten]"),
+                arguments(Named.of("Invalid outside range format", """
+                        {"notIn":"(zero..100)"}"""), "Invalid format for within/outside range: (zero..100)"),
+                arguments(Named.of("Not an object", """
+                        "eq\""""), "Expected start of object"),
+                arguments(Named.of("Empty field name", """
+                        {"":42}"""), "Unknown discriminator: ''")
         );
     }
 }
