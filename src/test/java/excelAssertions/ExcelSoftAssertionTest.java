@@ -105,6 +105,14 @@ class ExcelSoftAssertionTest {
                         cellAt("A2").withBoolean(equalTo(true)),
                         cellAt("A3").withBoolean(ofFalse())
                 )
+
+                //comments
+                .inSheet("Comments").have(
+                        cellAt("A1").exists().withComment("FORMAT"),
+                        cellAt("A1").exists().withComment(equalTo("format").ignoreCase()),
+                        cellAt("A5").exists().withComment(containing("MpT").ignoreCase()),
+                        cellAt("A9").exists().withComment(matching("\\waL[ue]{2}").ignoreCase())
+                )
         ;
     }
 
@@ -113,7 +121,7 @@ class ExcelSoftAssertionTest {
         exampleFile = Files.createTempFile("Example-", ".xlsx").toFile();
         try (FileOutputStream out = new FileOutputStream(exampleFile)) {
             generateTestExcelFile(out);
-            java.awt.Desktop.getDesktop().open(exampleFile);
+            //java.awt.Desktop.getDesktop().open(exampleFile);
         }
         assertThatExcelFile = assertThatExcel(exampleFile);
     }
@@ -126,7 +134,7 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile = null;
         }
 
-        //if (exampleFile != null) Files.deleteIfExists(exampleFile.toPath());
+        if (exampleFile != null) Files.deleteIfExists(exampleFile.toPath());
     }
 
     private static void generateTestExcelFile(OutputStream output) throws IOException {

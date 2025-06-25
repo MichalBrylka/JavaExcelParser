@@ -12,6 +12,7 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
     protected final String cellAddress;
     protected TextAssertion<?> expectedFormat;
     protected FormatCategory expectedFormatCategory;
+    protected TextAssertion<?> expectedComment;
 
     protected CellAssertion(String cellAddress) {
         if (cellAddress == null || cellAddress.isBlank())
@@ -26,6 +27,16 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
 
     public TAssertion withFormat(String expectedFormat) {
         this.expectedFormat = new EqualsTextAssertion(expectedFormat, false, false);
+        return self();
+    }
+
+    public TAssertion withComment(TextAssertion<?> expectedComment) {
+        this.expectedComment = expectedComment;
+        return self();
+    }
+
+    public TAssertion withComment(String expectedComment) {
+        this.expectedComment = new EqualsTextAssertion(expectedComment, false, false);
         return self();
     }
 
@@ -55,7 +66,7 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
     final void applyAssert(Cell cell, SoftAssertions softly) {
         if (expectedFormat != null) {
             var softAssert = softly.assertThat(getCellFormat(cell))
-                    .as(() -> "cell format at %s!%s to %s".formatted(sheetName, cellAddress, expectedFormat.getFilterDescription()));
+                    .as(() -> "cell format at %s!%s to %s".formatted(sheetName, cellAddress, expectedFormat.toString()));
             expectedFormat.apply(softAssert);
         }
         if (expectedFormatCategory != null) {
@@ -63,6 +74,12 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
             softly.assertThat(actual)
                     .as(() -> "expected format category at %s!%s".formatted(sheetName, cellAddress))
                     .isEqualTo(expectedFormatCategory);
+        }
+
+        if (expectedComment != null) {
+            var softAssert = softly.assertThat(getCellComment(cell))
+                    .as(() -> "cell comment at %s!%s to %s".formatted(sheetName, cellAddress, expectedComment.toString()));
+            expectedComment.apply(softAssert);
         }
 
         applyAssertCore(cell, softly);
@@ -73,6 +90,14 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
     private static String getCellFormat(Cell cell) {
         return cell != null && cell.getCellStyle() instanceof CellStyle style && style.getDataFormatString() instanceof String format
                 ? format
+                : null;
+    }
+
+    private static String getCellComment(Cell cell) {
+        return cell != null && cell.getCellComment() instanceof Comment comment &&
+               comment.getString() instanceof RichTextString richTextString &&
+               richTextString.getString() instanceof String commentText
+                ? commentText
                 : null;
     }
 

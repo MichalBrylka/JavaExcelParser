@@ -29,7 +29,8 @@ public sealed abstract class TextAssertion<TAssertion extends TextAssertion<TAss
         return self();
     }
 
-    public abstract String getFilterDescription();
+    @Override
+    public abstract String toString();
 
     @SuppressWarnings("unchecked")
     protected TAssertion self() {
@@ -158,7 +159,7 @@ final class EqualsTextAssertion extends TextAssertion<EqualsTextAssertion> {
     }
 
     @Override
-    public String getFilterDescription() {
+    public String toString() {
         return "equal '%s' %s, %s".formatted(expected, ignoreCase ? "ignoring case" : "case sensitive", ignoreNewLines ? "ignoring new lines" : "respecting new lines");
     }
 
@@ -198,7 +199,7 @@ final class ContainsTextAssertion extends TextAssertion<ContainsTextAssertion> {
     }
 
     @Override
-    public String getFilterDescription() {
+    public String toString() {
         return "contain '%s' %s".formatted(expectedSubstring, ignoreCase ? "ignoring case" : "case sensitive");
     }
 
@@ -245,7 +246,7 @@ final class PatternTextAssertion extends TextAssertion<PatternTextAssertion> {
     }
 
     @Override
-    public String getFilterDescription() {
+    public String toString() {
         return "match '%s' %s, %s".formatted(pattern, ignoreCase ? "ignoring case" : "case sensitive", dotallMode ? "dotallMode" : "no dotallMode(default)");
     }
 
