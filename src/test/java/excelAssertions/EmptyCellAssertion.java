@@ -29,6 +29,11 @@ public final class EmptyCellAssertion extends CellAssertion<EmptyCellAssertion> 
                 return;
         }
 
-        softly.fail("Cell %s!%s expected to be empty but was not".formatted(getSheetName(), cellAddress));
+        softly.fail("Cell %s expected to be empty but was not".formatted(getFullCellAddress()));
+    }
+
+    @Override
+    public String toString() {
+        return "(Cell %s is EMPTY)%s".formatted(getFullCellAddress(), super.toString());
     }
 }

@@ -17,24 +17,21 @@ public class ExcelOperations {
                     String comment = (cell.getCellComment() != null) ? cell.getCellComment().getString().getString() : null;
 
                     String format = cell.getCellStyle().getDataFormatString();
-                    if (Objects.equals(format, "General") || Objects.equals(format, "@"))
-                        format = null;// Get cell format. If it's "General" or a default format, store null.
-
 
                     CellEntry<?> cellEntry = switch (cell.getCellType()) {
-                        case STRING -> new StringCellEntry(address, cell.getStringCellValue(), format, comment);
+                        case STRING -> new TextCellEntry(address, cell.getStringCellValue(), format, comment);
                         case NUMERIC -> DateUtil.isCellDateFormatted(cell)
                                 ? new DateCellEntry(address, cell.getLocalDateTimeCellValue(), format, comment)
-                                : new NumericCellEntry(address, cell.getNumericCellValue(), format, comment);
+                                : new NumberCellEntry(address, cell.getNumericCellValue(), format, comment);
 
                         case BOOLEAN -> new BooleanCellEntry(address, cell.getBooleanCellValue(), format, comment);
 
                         case FORMULA -> {
                             CellEntry<?> resultCellEntry = switch (cell.getCachedFormulaResultType()) {
-                                case STRING -> new StringCellEntry(address, cell.getStringCellValue(), format, comment);
+                                case STRING -> new TextCellEntry(address, cell.getStringCellValue(), format, comment);
                                 case NUMERIC -> DateUtil.isCellDateFormatted(cell)
                                         ? new DateCellEntry(address, cell.getLocalDateTimeCellValue(), format, comment)
-                                        : new NumericCellEntry(address, cell.getNumericCellValue(), format, comment);
+                                        : new NumberCellEntry(address, cell.getNumericCellValue(), format, comment);
                                 case BOOLEAN ->
                                         new BooleanCellEntry(address, cell.getBooleanCellValue(), format, comment);
                                 case BLANK -> new NoValueCellEntry(address, format, comment);
@@ -82,8 +79,8 @@ public class ExcelOperations {
 
 
                 switch (cellEntry) {
-                    case StringCellEntry stringEntry -> cell.setCellValue(stringEntry.value());
-                    case NumericCellEntry numericEntry -> cell.setCellValue(numericEntry.value());
+                    case TextCellEntry stringEntry -> cell.setCellValue(stringEntry.value());
+                    case NumberCellEntry numericEntry -> cell.setCellValue(numericEntry.value());
                     case BooleanCellEntry booleanEntry -> cell.setCellValue(booleanEntry.value());
                     case DateCellEntry dateEntry -> cell.setCellValue(dateEntry.value());
                     case ErrorCellEntry errorEntry ->

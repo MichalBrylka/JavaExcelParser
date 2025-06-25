@@ -26,11 +26,11 @@ public sealed abstract class ValueCellAssertion<TValue, TAssertion extends Value
                 if (isCellTypeSupported(cellValueType))
                     assertOnValue(fromCellValue(cellValue), softly);
                 else
-                    softly.fail("%s: cannot add assertion for formula cell %s!%s %s: '%s'".formatted(this.getClass().getSimpleName(), getSheetName(), cellAddress, cellValueType, cell.getStringCellValue()));
+                    softly.fail("%s: cannot add assertion for formula cell %s %s: '%s'".formatted(this.getClass().getSimpleName(), getFullCellAddress(), cellValueType, cell.getStringCellValue()));
                 return;
             }
         }
-        softly.fail("%s: cannot add assertion for cell %s!%s:'%s'".formatted(this.getClass().getSimpleName(), getSheetName(), cellAddress, cell == null ? "<EMPTY>" : cell.getStringCellValue()));
+        softly.fail("%s: cannot add assertion for cell %s:'%s'".formatted(this.getClass().getSimpleName(), getFullCellAddress(), cell == null ? "<EMPTY>" : cell.getStringCellValue()));
     }
 
     protected abstract void assertOnValue(TValue value, SoftAssertions softly);

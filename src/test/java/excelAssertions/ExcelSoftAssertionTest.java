@@ -5,7 +5,6 @@ import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.*;
 import org.opentest4j.MultipleFailuresError;
-import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
@@ -74,8 +73,6 @@ class ExcelSoftAssertionTest {
                                 TEXT(123456,"##0° 00' 00''")""").ignoreCase()),
                         cellAt("A5").withFormulaText(containing("char").ignoreCase()),
                         cellAt("A6").withFormulaText(matching(".*[1-3]{3}.*").dotallMode())
-
-
                 )
 
                 //texts
@@ -145,8 +142,8 @@ class ExcelSoftAssertionTest {
             sheetEntries.add(new SheetEntry("Numbers", List.of(
                     FormulaCellEntry.ofNoValue("A1", "1+1", "0.00"),
                     FormulaCellEntry.ofNoValue("A2", "100/3", "0.0000%"),
-                    new NumericCellEntry("A3", (double) Float.MAX_VALUE, "0.00"),
-                    new NumericCellEntry("A4", (double) Float.MIN_VALUE, "0.00000000"),
+                    new NumberCellEntry("A3", (double) Float.MAX_VALUE, "0.00"),
+                    new NumberCellEntry("A4", (double) Float.MIN_VALUE, "0.00000000"),
                     FormulaCellEntry.ofNoValue("A5", "-9999999", "#,##0"),
                     FormulaCellEntry.ofNoValue("A6", "SQRT(2)", "0.0000"),
                     FormulaCellEntry.ofNoValue("A7", "PI()", "0.0000"),
@@ -155,12 +152,12 @@ class ExcelSoftAssertionTest {
 
 
             sheetEntries.add(new SheetEntry("Strings", List.of(
-                    new StringCellEntry("A1", "Quarterly Report"),
+                    new TextCellEntry("A1", "Quarterly Report"),
                     FormulaCellEntry.ofNoValue("A2", """
                             "Hello "&"World\""""),
                     FormulaCellEntry.ofNoValue("A3", """
                             TEXT(123456,"##0° 00' 00''")"""),
-                    new StringCellEntry("A4", "\"\""),
+                    new TextCellEntry("A4", "\"\""),
                     FormulaCellEntry.ofNoValue("A5", """
                             "Line1"&CHAR(10)&"Line2\""""),
                     FormulaCellEntry.ofNoValue("A6", """
@@ -221,16 +218,16 @@ class ExcelSoftAssertionTest {
 
 
             sheetEntries.add(new SheetEntry("Headers", List.of(
-                    new StringCellEntry("E3", "Header"),
-                    new StringCellEntry("E4", "First"),
-                    new StringCellEntry("E5", "Second"),
-                    new StringCellEntry("E6", "Third")
+                    new TextCellEntry("E3", "Header"),
+                    new TextCellEntry("E4", "First"),
+                    new TextCellEntry("E5", "Second"),
+                    new TextCellEntry("E6", "Third")
             )));
 
             sheetEntries.add(new SheetEntry("Comments", List.of(
-                    new StringCellEntry("A1", "COMMENT1", null, "FORMAT"),
-                    new StringCellEntry("A5", "COMMENT2", null, "EMPTY"),
-                    new StringCellEntry("A9", "COMMENT3", null, "VALUE")
+                    new TextCellEntry("A1", "COMMENT1", null, "FORMAT"),
+                    new TextCellEntry("A5", "COMMENT2", null, "EMPTY"),
+                    new TextCellEntry("A9", "COMMENT3", null, "VALUE")
             )));
 
 

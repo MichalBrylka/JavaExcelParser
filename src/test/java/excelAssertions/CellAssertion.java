@@ -4,7 +4,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.api.SoftAssertions;
 
-@lombok.Getter(lombok.AccessLevel.PACKAGE)
+//@lombok.Getter(lombok.AccessLevel.PACKAGE)
 @lombok.EqualsAndHashCode(callSuper = false)
 public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAssertion>>
         permits SimpleCellAssertion, EmptyCellAssertion, ValueCellAssertion {
@@ -18,6 +18,16 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
         if (cellAddress == null || cellAddress.isBlank())
             throw new IllegalArgumentException("cellAddress cannot be null nor blank");
         this.cellAddress = cellAddress;
+    }
+
+    @Override
+    public String toString() {
+        return
+                (expectedFormat == null ? "" : ".withFormat(%s)".formatted(expectedFormat))
+                +
+                (expectedComment == null ? "" : ".withComment(%s)".formatted(expectedComment))
+                +
+                (expectedFormatCategory == null ? "" : ".withFormatCategory(%s)".formatted(expectedFormatCategory));
     }
 
     public TAssertion withFormat(TextAssertion<?> expectedFormat) {
@@ -47,9 +57,7 @@ public sealed abstract class CellAssertion<TAssertion extends CellAssertion<TAss
 
     private String sheetName;
 
-    String getSheetName() {
-        return sheetName;
-    }
+    String getFullCellAddress() {return "%s!%s".formatted(sheetName, cellAddress);}
 
     TAssertion withSheetName(String sheetName) {
         this.sheetName = sheetName;

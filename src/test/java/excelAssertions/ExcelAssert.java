@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class ExcelAssert implements AutoCloseable {
@@ -21,6 +22,8 @@ public final class ExcelAssert implements AutoCloseable {
         this.workbook = workbook;
         selectSheetByIndex(0);
     }
+
+    List<CellAssertionAtSheet> getAssertions() {return Collections.unmodifiableList(assertions);}
 
     private void selectSheetByIndex(int index) {
         if (index < workbook.getNumberOfSheets()) {
@@ -88,14 +91,23 @@ public final class ExcelAssert implements AutoCloseable {
 
     sealed interface SheetRef<T> permits SheetRefByName, SheetRefByIndex {
         T ref();
+
+        @Override
+        String toString();
     }
 
     record SheetRefByName(@NotNull String ref) implements SheetRef<String> {
+        @Override
+        public String toString() {return "'" + ref + "'";}
     }
 
     record SheetRefByIndex(@NotNull Integer ref) implements SheetRef<Integer> {
+        @Override
+        public String toString() {return "#" + ref;}
     }
 
     record CellAssertionAtSheet(@NotNull CellAssertion<?> assertion, @NotNull SheetRef<?> sheetRef) {
+        @Override
+        public String toString() {return sheetRef + ": " + assertion;}
     }
 }

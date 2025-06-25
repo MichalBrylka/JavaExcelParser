@@ -17,8 +17,13 @@ public final class ErrorTextCellAssertion extends ValueCellAssertion<String, Err
     @Override
     protected void assertOnValue(String actualValue, SoftAssertions softly) {
         var softAssert = softly.assertThat(actualValue)
-                .as(() -> "error text at %s!%s to %s".formatted(getSheetName(), cellAddress, assertion.toString()));
+                .as(() -> "error text at %s to %s".formatted(getFullCellAddress(), assertion.toString()));
         assertion.apply(softAssert);
+    }
+
+    @Override
+    public String toString() {
+        return "(Cell %s error text is %s)%s".formatted(getFullCellAddress(), assertion, super.toString());
     }
 
     @Override

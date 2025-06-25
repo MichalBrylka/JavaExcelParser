@@ -18,8 +18,13 @@ public final class NumberCellAssertion extends ValueCellAssertion<Double, Number
     @Override
     protected void assertOnValue(Double actualValue, SoftAssertions softly) {
         var softAssert = softly.assertThat(actualValue)
-                .as(() -> "number at %s!%s to %s".formatted(getSheetName(), cellAddress, assertion.toString()));
+                .as(() -> "number at %s to %s".formatted(getFullCellAddress(), assertion.toString()));
         assertion.apply(softAssert);
+    }
+
+    @Override
+    public String toString() {
+        return "(Cell %s number is %s)%s".formatted(getFullCellAddress(), assertion, super.toString());
     }
 
     @Override

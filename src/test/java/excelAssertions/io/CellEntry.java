@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 public sealed interface CellEntry<T> permits
         BooleanCellEntry, DateCellEntry, ErrorCellEntry, FormulaCellEntry,
-        NoValueCellEntry, NumericCellEntry, StringCellEntry {
+        NoValueCellEntry, NumberCellEntry, TextCellEntry {
 
     @NotNull String address();
 

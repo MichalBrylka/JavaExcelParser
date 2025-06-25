@@ -16,8 +16,13 @@ public final class BooleanCellAssertion extends ValueCellAssertion<Boolean, Bool
     @Override
     protected void assertOnValue(Boolean actualValue, SoftAssertions softly) {
         softly.assertThat(actualValue)
-                .as(() -> "boolean check at %s!%s".formatted(getSheetName(), cellAddress))
+                .as(() -> "boolean check at %s".formatted(getFullCellAddress()))
                 .isEqualTo(expectedValue);
+    }
+
+    @Override
+    public String toString() {
+        return "(Cell %s value is %s)%s".formatted(getFullCellAddress(), expectedValue, super.toString());
     }
 
     @Override

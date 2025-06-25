@@ -2,7 +2,7 @@ package excelAssertions.io;
 
 import org.jetbrains.annotations.NotNull;
 
-public record StringCellEntry(
+public record TextCellEntry(
         @NotNull String address,
         @NotNull String value,
         String format,
@@ -10,11 +10,11 @@ public record StringCellEntry(
 )
         implements CellEntry<String> {
 
-    public StringCellEntry(@NotNull String address, @NotNull String value) {
+    public TextCellEntry(@NotNull String address, @NotNull String value) {
         this(address, value, null);
     }
 
-    public StringCellEntry(@NotNull String address, @NotNull String value, String format) {
+    public TextCellEntry(@NotNull String address, @NotNull String value, String format) {
         this(address, value, format, null);
     }
 }
