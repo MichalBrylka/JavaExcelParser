@@ -1,0 +1,51 @@
+In Java given:
+public sealed interface NumberAssertion {
+    void apply(AbstractDoubleAssert<? extends AbstractDoubleAssert<?>> assertion);
+}
+implement records implementing this interface: CloseToPercentNumberAssertion, CloseToOffsetNumberAssertion, EqualToNumberAssertion, GreaterThanNumberAssertion, GreaterThanOrEqualToNumberAssertion, LessThanNumberAssertion, LessThanOrEqualToNumberAssertion, WithinRangeNumberAssertion, OutsideRangeNumberAssertion that will abstract away assertion logic and will add appropriate assert in apply method. Override toString to provide meaningful but concise info like "==5.5" or ">3.0",
+For CloseToOffsetNumberAssertion and CloseToPercentNumberAssertion store inside classes strongly typed domain object (Percentage and Offset from assertj)
+
+Records WithinRangeNumberAssertion, OutsideRangeNumberAssertion should store data about range: from, to and additional info if start and end should be inclusive or not( by default both should be inclusive) - this properties should be called exclusiveFrom/exclusiveTo and use false as default. Add validation using compact constructor to check if "to" is greather than "from"
+
+For simplicity classes should not be public but package private and stored in same file as interface
+
+toString should use grammar/format so that is can end sentence "number to be ..." i.e. but it should be short and mathematical for OutsideRangeNumberAssertion that should be "number to be ∉ [1..6)" which would rad "beyond range 1(inclusive) and 6(exclusive)"
+
+
+LATER
+
+Add polymorphic serializer / deserializer for NumberAssertion using Jackson using following format:
+{
+  "operation": string in format described below for ranges and CloseTo* classes or number literal representing "expected" or "threshold",
+}
+operation should be a discriminator for classes as follows:
+- EqualToNumberAssertion: "eq" should be used for serialization but "==" and "=" should also be supported
+- GreaterThanNumberAssertion: "gt" should be used for serialization but ">" should also be supported
+- GreaterThanOrEqualToNumberAssertion: "gte" should be used for serialization but ">=" should also be supported
+- LessThanNumberAssertion: "lt" should be used for serialization but "<" should also be supported
+- LessThanOrEqualToNumberAssertion: "lte" should be used for serialization but "<=" should also be supported
+- CloseToOffsetNumberAssertion: "close" should be used for serialization but "~" and "≈" should also be supported. String used to serialize payload should be in form: "expected+-offset.value". Optionally format where +- is swapped to "±" should also be supported.
+- CloseToPercentNumberAssertion: "closePercent" should be used for serialization but "close%", "≈%" and "~%" should also be supported. String used to serialize payload should be in form: "expected+-percentage.value%". Optionally format where +- is swapped to "±" should also be supported.
+
+- WithinRangeNumberAssertion: "in" should be used for serialization but "∈" and "within" should also be supported. String used to serialize payload should be in form: "[from..to]". Square brackets should be used for inclusive range boundary, parentheses should be used for exclusive boundary.
+
+- OutsideRangeNumberAssertion: "notIn" should be used for serialization but "∉", "out" and "beyond" should also be supported. String used to serialize payload should be in form: "[from..to]". Square brackets should be used for inclusive range boundary, parentheses should be used for exclusive boundary.
+
+
+Serializer and deserializer should be nested classes inside NumberAssertion and be registered using annotations:
+@com.fasterxml.jackson.databind.annotation.JsonSerialize(using = NumberAssertion.NumberAssertionSerializer.class)
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = NumberAssertion.NumberAssertionDeserializer.class)
+
+
+All other fields and formats should not be supported. Essentially serialization should only support exactly one field inside object JSON literal
+For serialzier and deserializer use Enum-based discriminator model
+
+change ctxt.mappingException with JsonMappingException.from
+
+NumberAssertionType.fromKey should return null and not throw if key is not found
+Add tests for these ser/deser. Add positive and negative flows. Use assertj and @MethodSource
+
+Do not use "Helper classes for test cases". Opt for text blocks for JSONs
+
+For invalidDeserializationCases use Named.of
+

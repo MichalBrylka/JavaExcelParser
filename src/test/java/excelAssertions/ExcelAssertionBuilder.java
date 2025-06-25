@@ -1,6 +1,7 @@
 package excelAssertions;
 
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.CellReference;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 
@@ -29,21 +30,13 @@ public class ExcelAssertionBuilder {
         }
     }
 
-    public static ExcelCellAssertionBuilder cellAt(String cellAddress) {
-        return new ExcelCellAssertionBuilder(cellAddress);
-    }
+    public static ExcelCellAssertionBuilder cellAt(String cellAddress) {return new ExcelCellAssertionBuilder(cellAddress);}
 
-    public static EqualsTextAssertion equalTo(String expectedText) {
-        return new EqualsTextAssertion(expectedText, false, false);
-    }
+    public static EqualsTextAssertion equalTo(String expectedText) {return new EqualsTextAssertion(expectedText, false, false);}
 
-    public static ContainsTextAssertion containing(String containsText) {
-        return new ContainsTextAssertion(containsText, false);
-    }
+    public static ContainsTextAssertion containing(String containsText) {return new ContainsTextAssertion(containsText, false);}
 
-    public static PatternTextAssertion matching(String pattern) {
-        return new PatternTextAssertion(pattern, false, false);
-    }
+    public static PatternTextAssertion matching(String pattern) {return new PatternTextAssertion(pattern, false, false);}
 
     public static NumberAssertion equalTo(double expected) {return new EqualToNumberAssertion(expected);}
 
@@ -92,4 +85,20 @@ public class ExcelAssertionBuilder {
 
         public CellAssertion<?> exists() {return new SimpleCellAssertion(cellAddress);}
     }
+
+    /*public class ExcelColumnAssertionBuilder {
+        private final int columnIndex;
+        private final int baseRowOffset;
+
+        ExcelColumnAssertionBuilder(int columnIndex, int baseRowOffset) {
+            this.columnIndex = columnIndex;
+            this.baseRowOffset = baseRowOffset;
+        }
+
+        public ExcelCellAssertionBuilder inRow(int absoluteRowOneBased) {
+            int row = (absoluteRowOneBased - 1) + baseRowOffset;
+            CellReference cellRef = new CellReference(row, columnIndex);
+            return new ExcelCellAssertionBuilder(cellRef.formatAsString());
+        }
+    }*/
 }

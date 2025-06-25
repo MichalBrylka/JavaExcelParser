@@ -125,8 +125,7 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile = null;
         }
 
-        if (exampleFile != null)
-            Files.deleteIfExists(exampleFile.toPath());
+        if (exampleFile != null) Files.deleteIfExists(exampleFile.toPath());
     }
 
     private static void generateTestExcelFile(OutputStream output) throws IOException {
@@ -207,13 +206,21 @@ class ExcelSoftAssertionTest {
                     new FormulaCell("XYZ()")
             ));
 
+            sheets.put("Headers", List.of(
+                    new TextCell("", null, 5),
+                    new TextCell("Header", null, 5),
+                    new TextCell("First", null, 5),
+                    new TextCell("Second", null, 5),
+                    new TextCell("Third", null, 5)
+            ));
+
             for (var entry : sheets.entrySet()) {
                 Sheet sheet = workbook.createSheet(entry.getKey());
                 int rowIdx = 0;
 
                 for (CellBase cellData : entry.getValue()) {
                     Row row = sheet.createRow(rowIdx++);
-                    Cell cell = row.createCell(0);
+                    Cell cell = row.createCell(cellData.column());
 
                     switch (cellData) {
                         case TextCell c -> cell.setCellValue(c.text);
@@ -236,23 +243,25 @@ class ExcelSoftAssertionTest {
 
     interface CellBase {
         String format();
+
+        int column();
     }
 
-    record TextCell(String text, String format) implements CellBase {
-        TextCell(String text) {
-            this(text, null);
-        }
+    record TextCell(String text, String format, int column) implements CellBase {
+        TextCell(String text, String format) {this(text, format, 0);}
+
+        TextCell(String text) {this(text, null, 0);}
     }
 
-    record NumberCell(double number, String format) implements CellBase {
-        NumberCell(double number) {
-            this(number, null);
-        }
+    record NumberCell(double number, String format, int column) implements CellBase {
+        NumberCell(double number, String format) {this(number, format, 0);}
+
+        NumberCell(double number) {this(number, null, 0);}
     }
 
-    record FormulaCell(String formula, String format) implements CellBase {
-        FormulaCell(String formula) {
-            this(formula, null);
-        }
+    record FormulaCell(String formula, String format, int column) implements CellBase {
+        FormulaCell(String formula, String format) {this(formula, format, 0);}
+
+        FormulaCell(String formula) {this(formula, null, 0);}
     }
 }
