@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static excelAssertions.ExcelAssertionBuilder.*;
+import static org.assertj.core.api.Assertions.*;
 
 class AssertionReaderTest {
     private ExcelAssert assertThatExcelFile;
@@ -21,13 +22,60 @@ class AssertionReaderTest {
     void readFrom_ShouldReadAssertionsFromExcel() {
         usingNewExcelFile();
         AssertionReader.readFrom(assertionsFile, assertThatExcelFile);
-        var assertions = assertThatExcelFile.getAssertions();
+        var actualAssertions = assertThatExcelFile.getAssertions();
 
-        /*var expectedAssertions = Stream.<ExpAss>of(
-              new ExpAss(),
-        );*/
+        var expectedAssertions = Stream.of(
+                new ExpAss(1, new EmptyCellAssertion("B1")),
 
-        //ExcelAssert.CellAssertionAtSheet
+                new ExpAss("Numbers", new NumberCellAssertion("A1", new EqualToNumberAssertion(2.0)).withFormat(new EqualsTextAssertion("0.00", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A2", new GreaterThanNumberAssertion(33.0)).withFormat(new EqualsTextAssertion("0.0000%", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A3", new GreaterThanOrEqualToNumberAssertion(10.0)).withFormat(new EqualsTextAssertion("0.00", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A4", new LessThanNumberAssertion(0.0000001)).withFormat(new EqualsTextAssertion("0.00000000", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A5", new LessThanOrEqualToNumberAssertion(-9999999.0)).withFormat(new EqualsTextAssertion("#,##0", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A6", new GreaterThanNumberAssertion(1.414)).withFormat(new EqualsTextAssertion("0.0000", true, true))),
+                new ExpAss("Numbers", new NumberCellAssertion("A7", new LessThanNumberAssertion(3.15)).withFormat(new EqualsTextAssertion("0.0000", true, true))),
+
+                new ExpAss("StringsFormulas", new FormulaTextCellAssertion("A2", new EqualsTextAssertion("""
+                        "Hello "&"World\"""", true, true))),
+                new ExpAss("StringsFormulas", new FormulaTextCellAssertion("A3", new EqualsTextAssertion("""
+                        TEXT(123456,"##0° 00' 00''")""", true, true))),
+                new ExpAss("StringsFormulas", new FormulaTextCellAssertion("A5", new EqualsTextAssertion("""
+                        "Line1"&CHAR(10)&"Line2\"""", true, true))),
+                new ExpAss("StringsFormulas", new FormulaTextCellAssertion("A6", new EqualsTextAssertion("""
+                        "123" & "456\"""", true, true))),
+                new ExpAss("StringsFormulas", new FormulaTextCellAssertion("A7", new EqualsTextAssertion("""
+                        "=" & "SUM(1,2)"\s""", true, true))),
+
+                new ExpAss("Strings", new TextCellAssertion("A1", new ContainsTextAssertion("report", true))),
+                new ExpAss("Strings", new TextCellAssertion("A2", new EqualsTextAssertion("Hello World", true, true))),
+                new ExpAss("Strings", new TextCellAssertion("A3", new EqualsTextAssertion("123456", true, true))),
+                new ExpAss("Strings", new TextCellAssertion("A4", new EqualsTextAssertion("\"\"", true, true))),
+                new ExpAss("Strings", new TextCellAssertion("A5", new PatternTextAssertion("Line1.*line2", true, true))),
+                new ExpAss("Strings", new TextCellAssertion("A6", new PatternTextAssertion("^[1-6]{6}$", true, true))),
+                new ExpAss("Strings", new TextCellAssertion("A7", new PatternTextAssertion("""
+                        ^=sUm\\(\\d+,\\d+\\)$""", true, true))),
+
+                new ExpAss("Booleans", new BooleanCellAssertion("A1", true)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A2", true)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A3", false)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A4", false)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A5", false)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A6", false)),
+                new ExpAss("Booleans", new BooleanCellAssertion("A7", true))
+        ).map(
+                ea -> new ExcelAssert.CellAssertionAtSheet(
+                        ea.assertion.withSheetName(ea.sheetRef instanceof String s ? s : "StringsFormulas"),
+                        switch (ea.sheetRef) {
+                            case String s -> new ExcelAssert.SheetRefByName(s);
+                            case Integer i -> new ExcelAssert.SheetRefByIndex(i);
+                            default -> throw new IllegalStateException(ea.sheetRef + " is not supported");
+                        }
+                )
+        ).toList();
+
+        assertThat(actualAssertions)
+                .usingRecursiveComparison()
+                .isEqualTo(expectedAssertions);
     }
 
     record ExpAss(@NotNull Object sheetRef, @NotNull CellAssertion<?> assertion) {}
@@ -114,7 +162,7 @@ class AssertionReaderTest {
             sheetEntries.add(new SheetEntry("Strings", List.of(
                     new TextCellEntry("A1", "report", null, "containing"),
                     new TextCellEntry("A2", "Hello World", null, "equalTo"),
-                    new TextCellEntry("A3", "123456", null, ""), //not comment tag is same as 'equalTo'
+                    new TextCellEntry("A3", "123456", null, ""), //no comment tag is same as 'equalTo'
                     new TextCellEntry("A4", "\"\"", null, ""),
                     new TextCellEntry("A5", "Line1.*line2", null, "matching"),
                     new TextCellEntry("A6", "^[1-6]{6}$", null, "matching"),
