@@ -1,5 +1,6 @@
 package excelAssertions;
 
+import excelAssertions.io.*;
 import org.assertj.core.data.Offset;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.*;
@@ -112,7 +113,7 @@ class ExcelSoftAssertionTest {
         exampleFile = Files.createTempFile("Example-", ".xlsx").toFile();
         try (FileOutputStream out = new FileOutputStream(exampleFile)) {
             generateTestExcelFile(out);
-            //java.awt.Desktop.getDesktop().open(exampleFile);
+            java.awt.Desktop.getDesktop().open(exampleFile);
         }
         assertThatExcelFile = assertThatExcel(exampleFile);
     }
@@ -125,143 +126,108 @@ class ExcelSoftAssertionTest {
             assertThatExcelFile = null;
         }
 
-        if (exampleFile != null) Files.deleteIfExists(exampleFile.toPath());
+        //if (exampleFile != null) Files.deleteIfExists(exampleFile.toPath());
     }
 
     private static void generateTestExcelFile(OutputStream output) throws IOException {
         try (var workbook = new XSSFWorkbook()) {
 
-            Map<String, List<CellBase>> sheets = new LinkedHashMap<>();
+            List<SheetEntry> sheetEntries = new ArrayList<>();
 
-            sheets.put("Numbers", List.of(
-                    new FormulaCell("1+1", "0.00"),
-                    new FormulaCell("100/3", "0.0000%"),
-                    new NumberCell(Float.MAX_VALUE, "0.00"),
-                    new NumberCell(Float.MIN_VALUE, "0.00000000"),
-                    new FormulaCell("-9999999", "#,##0"),
-                    new FormulaCell("SQRT(2)", "0.0000"),
-                    new FormulaCell("PI()", "0.0000"),
-                    new FormulaCell("RAND()*100", "0.00")
-            ));
+            sheetEntries.add(new SheetEntry("Numbers", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "1+1", "0.00"),
+                    FormulaCellEntry.ofNoValue("A2", "100/3", "0.0000%"),
+                    new NumericCellEntry("A3", (double) Float.MAX_VALUE, "0.00"),
+                    new NumericCellEntry("A4", (double) Float.MIN_VALUE, "0.00000000"),
+                    FormulaCellEntry.ofNoValue("A5", "-9999999", "#,##0"),
+                    FormulaCellEntry.ofNoValue("A6", "SQRT(2)", "0.0000"),
+                    FormulaCellEntry.ofNoValue("A7", "PI()", "0.0000"),
+                    FormulaCellEntry.ofNoValue("A8", "RAND()*100", "0.00")
+            )));
 
-            sheets.put("Strings", List.of(
-                    new TextCell("Quarterly Report"),
-                    new FormulaCell("""
+
+            sheetEntries.add(new SheetEntry("Strings", List.of(
+                    new StringCellEntry("A1", "Quarterly Report"),
+                    FormulaCellEntry.ofNoValue("A2", """
                             "Hello "&"World\""""),
-                    new FormulaCell("""
+                    FormulaCellEntry.ofNoValue("A3", """
                             TEXT(123456,"##0° 00' 00''")"""),
-                    new TextCell("\"\""),
-                    new FormulaCell("""
+                    new StringCellEntry("A4", "\"\""),
+                    FormulaCellEntry.ofNoValue("A5", """
                             "Line1"&CHAR(10)&"Line2\""""),
-                    new FormulaCell("""
+                    FormulaCellEntry.ofNoValue("A6", """
                             "123" & "456\""""),
-                    new FormulaCell("""
+                    FormulaCellEntry.ofNoValue("A7", """
                             "=" & "SUM(1,2)"\s""")
-            ));
+            )));
 
-            sheets.put("Dates", List.of(
-                    new FormulaCell("DATE(2023,1,1)", "yyyy-mm-dd"),
-                    new FormulaCell("DATE(1900,1,1)", "yyyy-mm-dd"),
-                    new FormulaCell("TODAY()", "yyyy-mm-dd"),
-                    new FormulaCell("DATE(2024,2,29)", "yyyy-mm-dd"),
-                    new FormulaCell("DATE(1999,12,31)", "yyyy-mm-dd"),
-                    new FormulaCell("EDATE(TODAY(),-1)", "yyyy-mm-dd")
-            ));
 
-            sheets.put("Times", List.of(
-                    new FormulaCell("TIME(12,0,0)", "hh:mm"),
-                    new FormulaCell("TIME(23,59,59)", "hh:mm:ss"),
-                    new FormulaCell("NOW()-TODAY()", "hh:mm:ss"),
-                    new FormulaCell("TIME(0,0,0)", "hh:mm:ss"),
-                    new FormulaCell("TIME(7,30,15)", "hh:mm:ss AM/PM"),
-                    new FormulaCell("MOD(NOW(),1)", "hh:mm:ss")
-            ));
+            sheetEntries.add(new SheetEntry("Dates", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "DATE(2023,1,1)", "yyyy-mm-dd"),
+                    FormulaCellEntry.ofNoValue("A2", "DATE(1900,1,1)", "yyyy-mm-dd"),
+                    FormulaCellEntry.ofNoValue("A3", "TODAY()", "yyyy-mm-dd"),
+                    FormulaCellEntry.ofNoValue("A4", "DATE(2024,2,29)", "yyyy-mm-dd"),
+                    FormulaCellEntry.ofNoValue("A5", "DATE(1999,12,31)", "yyyy-mm-dd"),
+                    FormulaCellEntry.ofNoValue("A6", "EDATE(TODAY(),-1)", "yyyy-mm-dd")
+            )));
 
-            sheets.put("DateTimes", List.of(
-                    new FormulaCell("NOW()", "yyyy-mm-dd hh:mm:ss"),
-                    new FormulaCell("DATE(2025,6,17)+TIME(15,30,0)", "[$-en-US]yyyy-mmm-dd hh:mm:ss;@"),
-                    new FormulaCell("NOW()+1/24", "yyyy-mm-dd hh:mm:ss"),
-                    new FormulaCell("NOW()-1/24", "yyyy-mmm-dd hh:mm:ss"),
-                    new FormulaCell("TODAY()+TIME(23,59,59)", "yyyy-mm-dd hh:mm:ss")
-            ));
+            sheetEntries.add(new SheetEntry("Times", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "TIME(12,0,0)", "hh:mm"),
+                    FormulaCellEntry.ofNoValue("A2", "TIME(23,59,59)", "hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A3", "NOW()-TODAY()", "hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A4", "TIME(0,0,0)", "hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A5", "TIME(7,30,15)", "hh:mm:ss AM/PM"),
+                    FormulaCellEntry.ofNoValue("A6", "MOD(NOW(),1)", "hh:mm:ss")
+            )));
 
-            sheets.put("Booleans", List.of(
-                    new FormulaCell("1=1"),
-                    new FormulaCell("ISNUMBER(123)"),
-                    new FormulaCell("FALSE"),
-                    new FormulaCell("1>2"),
-                    new FormulaCell("NOT(TRUE)"),
-                    new FormulaCell("AND(TRUE,FALSE)"),
-                    new FormulaCell("OR(TRUE,FALSE)")
-            ));
+            sheetEntries.add(new SheetEntry("DateTimes", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "NOW()", "yyyy-mm-dd hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A2", "DATE(2025,6,17)+TIME(15,30,0)", "[$-en-US]yyyy-mmm-dd hh:mm:ss;@"),
+                    FormulaCellEntry.ofNoValue("A3", "NOW()+1/24", "yyyy-mm-dd hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A4", "NOW()-1/24", "yyyy-mmm-dd hh:mm:ss"),
+                    FormulaCellEntry.ofNoValue("A5", "TODAY()+TIME(23,59,59)", "yyyy-mm-dd hh:mm:ss")
+            )));
 
-            sheets.put("Errors", List.of(
-                    new FormulaCell("1/0"),
-                    new FormulaCell("NA()"),
-                    new FormulaCell("SQRT(-1)"),
-                    new FormulaCell("""
+
+            sheetEntries.add(new SheetEntry("Booleans", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "1=1"),
+                    FormulaCellEntry.ofNoValue("A2", "ISNUMBER(123)"),
+                    FormulaCellEntry.ofNoValue("A3", "FALSE"),
+                    FormulaCellEntry.ofNoValue("A4", "1>2"),
+                    FormulaCellEntry.ofNoValue("A5", "NOT(TRUE)"),
+                    FormulaCellEntry.ofNoValue("A6", "AND(TRUE,FALSE)"),
+                    FormulaCellEntry.ofNoValue("A7", "OR(TRUE,FALSE)")
+            )));
+
+
+            sheetEntries.add(new SheetEntry("Errors", List.of(
+                    FormulaCellEntry.ofNoValue("A1", "1/0"),
+                    FormulaCellEntry.ofNoValue("A2", "NA()"),
+                    FormulaCellEntry.ofNoValue("A3", "SQRT(-1)"),
+                    FormulaCellEntry.ofNoValue("A4", """
                             1+"a\""""),
-                    new FormulaCell("""
+                    FormulaCellEntry.ofNoValue("A5", """
                             INDIRECT("A" & (2^20+1))"""),
-                    new FormulaCell("XYZ()")
-            ));
+                    FormulaCellEntry.ofNoValue("A6", "XYZ()")
+            )));
 
-            sheets.put("Headers", List.of(
-                    new TextCell("", null, 5),
-                    new TextCell("Header", null, 5),
-                    new TextCell("First", null, 5),
-                    new TextCell("Second", null, 5),
-                    new TextCell("Third", null, 5)
-            ));
 
-            for (var entry : sheets.entrySet()) {
-                Sheet sheet = workbook.createSheet(entry.getKey());
-                int rowIdx = 0;
+            sheetEntries.add(new SheetEntry("Headers", List.of(
+                    new StringCellEntry("E3", "Header"),
+                    new StringCellEntry("E4", "First"),
+                    new StringCellEntry("E5", "Second"),
+                    new StringCellEntry("E6", "Third")
+            )));
 
-                for (CellBase cellData : entry.getValue()) {
-                    Row row = sheet.createRow(rowIdx++);
-                    Cell cell = row.createCell(cellData.column());
+            sheetEntries.add(new SheetEntry("Comments", List.of(
+                    new StringCellEntry("A1", "COMMENT1", null, "FORMAT"),
+                    new StringCellEntry("A5", "COMMENT2", null, "EMPTY"),
+                    new StringCellEntry("A9", "COMMENT3", null, "VALUE")
+            )));
 
-                    switch (cellData) {
-                        case TextCell c -> cell.setCellValue(c.text);
-                        case NumberCell n -> cell.setCellValue(n.number);
-                        case FormulaCell f -> cell.setCellFormula(f.formula);
-                        default -> throw new IllegalStateException("Unexpected cell type: " + cell);
-                    }
 
-                    if (cellData.format() instanceof String format) {
-                        CellStyle style = workbook.createCellStyle();
-                        style.setDataFormat(workbook.createDataFormat().getFormat(format));
-                        cell.setCellStyle(style);
-                    }
-                }
-            }
-
+            ExcelOperations.fillWorkbook(workbook, sheetEntries);
             workbook.write(output);
         }
-    }
-
-    interface CellBase {
-        String format();
-
-        int column();
-    }
-
-    record TextCell(String text, String format, int column) implements CellBase {
-        TextCell(String text, String format) {this(text, format, 0);}
-
-        TextCell(String text) {this(text, null, 0);}
-    }
-
-    record NumberCell(double number, String format, int column) implements CellBase {
-        NumberCell(double number, String format) {this(number, format, 0);}
-
-        NumberCell(double number) {this(number, null, 0);}
-    }
-
-    record FormulaCell(String formula, String format, int column) implements CellBase {
-        FormulaCell(String formula, String format) {this(formula, format, 0);}
-
-        FormulaCell(String formula) {this(formula, null, 0);}
     }
 }

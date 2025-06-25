@@ -23,13 +23,25 @@ public final class ExcelAssert implements AutoCloseable {
     }
 
     private void selectSheetByIndex(int index) {
-        sheet = workbook.getSheetAt(index);
-        sheetRef = new SheetRefByIndex(index);
+        if (index < workbook.getNumberOfSheets()) {
+            sheet = workbook.getSheetAt(index);
+            sheetRef = new SheetRefByIndex(index);
+        } else {
+            softly.fail("Cannot find sheet with index %d".formatted(index));
+            sheet = null;
+            sheetRef = null;
+        }
     }
 
     private void selectSheetByName(String sheetName) {
-        sheet = workbook.getSheet(sheetName);
-        sheetRef = new SheetRefByName(sheetName);
+        if (workbook.getSheet(sheetName) instanceof Sheet existingSheet) {
+            sheet = existingSheet;
+            sheetRef = new SheetRefByName(sheetName);
+        } else {
+            softly.fail("Cannot find sheet with name '%s'".formatted(sheetName));
+            sheet = null;
+            sheetRef = null;
+        }
     }
 
     public ExcelAssert inSheet(int index) {
@@ -53,6 +65,9 @@ public final class ExcelAssert implements AutoCloseable {
     }
 
     private void addAssert(CellAssertion<?> cellAssertion) {
+        if (sheet == null || sheetRef == null)
+            return; //assertion about not existing sheet already exist
+
         cellAssertion
                 .withSheetName(sheet.getSheetName()) //bind sheet name for logging purposes
                 .applyAssert(cellAssertion.getCell(sheet), softly);
@@ -81,6 +96,6 @@ public final class ExcelAssert implements AutoCloseable {
     record SheetRefByIndex(@NotNull Integer ref) implements SheetRef<Integer> {
     }
 
-    record CellAssertionAtSheet(CellAssertion<?> assertion, SheetRef<?> sheetRef) {
+    record CellAssertionAtSheet(@NotNull CellAssertion<?> assertion, @NotNull SheetRef<?> sheetRef) {
     }
 }
